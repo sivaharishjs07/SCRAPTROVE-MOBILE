@@ -1,0 +1,154 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, FlatList,
+  TouchableOpacity, Share, RefreshControl,
+} from 'react-native';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../constants/translations';
+import { COLORS } from '../../constants/colors';
+import { FONTS } from '../../constants/typography';
+import { getScrapRates } from '../../services/api';
+import ProductIconChip from '../../components/ProductIconChip';
+
+const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// Map API response fields to the shape this screen expects
+const parseApiRates = (data) => {
+  if (!Array.isArray(data) || data.length === 0) return null;
+  return data.map((r, i) => ({
+    id:      String(r.id ?? i),
+    name_en: r.name    || r.name_en || '',
+    name_ta: r.name_ta || r.name    || '',
+    emoji:   r.icon    || '♻️',
+    price:   r.market_price ?? r.p1 ?? 0,
+    change:  r.trend === 'up' ? 1 : r.trend === 'down' ? -1 : 0,
+    unit:    r.unit    || 'kg',
+  }));
+};
+
+export default function ScrapRatesScreen() {
+  const { language } = useApp();
+  const [rates, setRates]         = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Load rates from backend on mount
+  useEffect(() => {
+    getScrapRates()
+      .then(res => {
+        const parsed = parseApiRates(res.data);
+        if (parsed) setRates(parsed);
+      })
+      .catch(() => {/* keep current state */});
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const res = await getScrapRates();
+      const parsed = parseApiRates(res.data);
+      if (parsed) setRates(parsed);
+    } catch { }
+    setRefreshing(false);
+  };
+
+  const handleShare = async () => {
+    const ratesList = rates.map(r =>
+      `• ${language === 'ta' ? r.name_ta : r.name_en}: ₹${r.price}/${r.unit}`
+    ).join('\n');
+
+    const message = language === 'ta'
+      ? `📊 இன்றைய சென்னை ஸ்கிராப் விலைகள் (${today})\n\n${ratesList}\n\n♻️ Scrap Trove App மூலம் உங்கள் ஸ்கிராப் விற்கலாம்!`
+      : `📊 Today's Chennai Scrap Rates (${today})\n\n${ratesList}\n\n♻️ Sell your scrap via Scrap Trove App!`;
+
+    await Share.share({ message });
+  };
+
+  const renderRate = ({ item }) => {
+    const name        = language === 'ta' ? item.name_ta : item.name_en;
+    const changeColor = item.change > 0 ? COLORS.success : item.change < 0 ? COLORS.error : COLORS.textSecondary;
+    const changeSymbol = item.change > 0 ? '▲' : item.change < 0 ? '▼' : '—';
+
+    return (
+      <View style={styles.rateRow}>
+        <ProductIconChip name={item.name_en || item.name || ''} size={20} chipSize={42} style={styles.iconChip} />
+        <View style={styles.rateInfo}>
+          <Text style={styles.rateName}>{name}</Text>
+          <Text style={styles.rateUnit}>per {item.unit}</Text>
+        </View>
+        <View style={styles.ratePriceBox}>
+          <Text style={styles.ratePrice}>₹{item.price}</Text>
+          {item.change !== 0 && (
+            <Text style={[styles.rateChange, { color: changeColor }]}>
+              {changeSymbol} {Math.abs(item.change)}
+            </Text>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>{t('todays_scrap_rates', language)}</Text>
+          <Text style={styles.headerDate}>{t('last_updated', language)}: {today}</Text>
+        </View>
+        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+          <Text style={styles.shareBtnText}>↑ {t('share_rates', language)}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={rates}
+        keyExtractor={(item) => item.id}
+        renderItem={renderRate}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        contentContainerStyle={styles.list}
+        ListFooterComponent={
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>{t('rates_disclaimer', language)}</Text>
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    backgroundColor: COLORS.surface, paddingTop: 56, paddingBottom: 14,
+    paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+  },
+  headerTitle: { fontFamily: FONTS.black, fontSize: 17, color: COLORS.text, marginBottom: 2 },
+  headerDate: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.textSecondary },
+  shareBtn: {
+    backgroundColor: COLORS.primaryLight, paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, borderWidth: 1, borderColor: COLORS.primary + '44',
+  },
+  shareBtnText: { color: COLORS.primary, fontFamily: FONTS.bold, fontSize: 13 },
+  tip: {
+    backgroundColor: COLORS.accentLight, paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: COLORS.accent + '33',
+  },
+  tipText: { color: COLORS.accent, fontFamily: FONTS.semiBold, fontSize: 13 },
+  list: { backgroundColor: COLORS.surface },
+  rateRow: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14,
+  },
+  iconChip: { marginRight: 12 },
+  rateInfo: { flex: 1 },
+  rateName: { fontFamily: FONTS.bold, fontSize: 15, color: COLORS.text },
+  rateUnit: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.textSecondary, marginTop: 1 },
+  ratePriceBox: { alignItems: 'flex-end' },
+  ratePrice: { fontFamily: FONTS.black, fontSize: 18, color: COLORS.text },
+  rateChange: { fontFamily: FONTS.bold, fontSize: 12, marginTop: 2 },
+  separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 70 },
+  footer: { padding: 16, alignItems: 'center' },
+  footerText: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.textLight, textAlign: 'center' },
+});
