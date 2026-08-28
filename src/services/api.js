@@ -4,6 +4,10 @@ import * as Device from 'expo-device';
 
 const BASE_URL = 'https://scrapx-api.duraimurugan12c.workers.dev/api';
 
+// API host WITHOUT the /api suffix — used by non-axios callers (e.g. the
+// city master fetch in constants/locations.js).
+export const API_BASE = BASE_URL.replace(/\/api$/, '');
+
 const api = axios.create({
   baseURL: BASE_URL,
   // 30s covers spotty 4G — the previous 15s was firing false "network error"

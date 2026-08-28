@@ -10,7 +10,7 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
-import { STATES, districts, cities } from '../../constants/locations';
+import { STATES, districts, cities, getCityIdAsync } from '../../constants/locations';
 import { VEHICLES } from '../../constants/vehicles';
 import { PickerModal, PickerBtn } from '../../components/LocationPickerModal';
 import { sellerSetup, dealerRegister, uploadPhoto } from '../../services/api';
@@ -247,7 +247,8 @@ export default function DetailsFormScreen({ navigation, route }) {
     if (!validateSeller()) return;
     setLoading(true);
     try {
-      const res = await sellerSetup({ name: name.trim(), state, district, city, gmail: gmail.trim(), seller_type: 'small' });
+      const smallCityId = await getCityIdAsync(state, district, city);
+      const res = await sellerSetup({ name: name.trim(), state, district, city, city_id: smallCityId, gmail: gmail.trim(), seller_type: 'small' });
       // Use the real session token from setup response or temp token stored after OTP verify
       const sessionToken = res.data?.token || (await AsyncStorage.getItem('auth_token'));
       if (!sessionToken) throw new Error('Session token missing. Please try logging in again.');
@@ -320,11 +321,13 @@ export default function DetailsFormScreen({ navigation, route }) {
       const shopUrls    = (await Promise.all(shopPhotos.map(p => uploadPhotoUri(p.uri)))).filter(Boolean);
       const vehicleUrls = (await Promise.all(vehiclePhotos.map(p => uploadPhotoUri(p.uri)))).filter(Boolean);
 
+      const dealerCityId = await getCityIdAsync(state, district, city);
       const payload = {
         owner_name:     name.trim(),
         business_name:  business.trim(),
         vehicles,
         state, district, city,
+        city_id:        dealerCityId,
         address:        address.trim(),
         pincode,
         gst:            gst.trim().toUpperCase(),

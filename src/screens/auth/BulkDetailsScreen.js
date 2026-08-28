@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../../context/AppContext';
 import { sellerSetup } from '../../services/api';
 import { FONTS } from '../../constants/typography';
-import { STATES, getDistricts, getCities } from '../../constants/locations';
+import { STATES, getDistricts, getCities, getCityIdAsync } from '../../constants/locations';
 
 // Bulk / industrial-seller onboarding.
 // Mirrors the web LoginPage bulk-register flow — contact person + company
@@ -142,6 +142,7 @@ export default function BulkDetailsScreen({ route, navigation }) {
         state:             state.trim(),
         district:          district.trim(),
         city:              city.trim(),
+        city_id:           await getCityIdAsync(state.trim(), district.trim(), city.trim()),
         company_pincode:   pincode.trim(),
         company_lat:       lat,
         company_lng:       lng,

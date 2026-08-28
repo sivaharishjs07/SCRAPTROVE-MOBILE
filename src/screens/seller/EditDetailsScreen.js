@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { useApp } from '../../context/AppContext';
 import { submitEditRequest } from '../../services/api';
+import { getCityIdAsync } from '../../constants/locations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
 
@@ -117,7 +118,11 @@ export default function EditDetailsScreen({ navigation }) {
 
     setSubmitting(true);
     try {
-      const res = await submitEditRequest(form);
+      // Attach the admin-managed city_id when we can resolve the current
+      // state/district/city triple. Backend still resolves from text if
+      // this comes back null.
+      const editCityId = await getCityIdAsync(form.state, form.district, form.city);
+      const res = await submitEditRequest({ ...form, city_id: editCityId });
       if (res?.data?.error) {
         Alert.alert('Could not submit', res.data.error);
         setSubmitting(false);
