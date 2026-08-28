@@ -25,9 +25,15 @@ on:
       - durai
     paths:
       - 'src/**'
+      - 'assets/**'
+      - 'plugins/**'
       - 'app.json'
       - 'eas.json'
       - 'package.json'
+      - 'package-lock.json'
+      - 'google-services.json'
+      - 'index.js'
+      - 'App.js'
       - '.github/workflows/build-staging-apk.yml'
 
 jobs:
