@@ -14,7 +14,10 @@
         "buildType": "apk"
       },
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.stage.scraptrove.com"
+      }
     },
     "production": {
       "android": {

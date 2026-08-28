@@ -2,11 +2,24 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 
-const BASE_URL = 'https://scrapx-api.duraimurugan12c.workers.dev/api';
+// Which worker to talk to. EXPO_PUBLIC_API_URL wins if the build passed
+// it in (that's how we produce a distinct staging APK); otherwise fall
+// back to the historic prod worker so nothing regresses.
+//
+// Staging build:
+//   EXPO_PUBLIC_API_URL=https://api.stage.scraptrove.com \
+//     npx eas build --profile preview --platform android
+// Production build (the default):
+//   npx eas build --profile production --platform android
+const RUNTIME_API =
+  (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_API_URL)
+    ? String(process.env.EXPO_PUBLIC_API_URL).replace(/\/+$/, '')
+    : 'https://scrapx-api.duraimurugan12c.workers.dev';
+const BASE_URL = `${RUNTIME_API}/api`;
 
 // API host WITHOUT the /api suffix — used by non-axios callers (e.g. the
 // city master fetch in constants/locations.js).
-export const API_BASE = BASE_URL.replace(/\/api$/, '');
+export const API_BASE = RUNTIME_API;
 
 const api = axios.create({
   baseURL: BASE_URL,

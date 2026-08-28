@@ -1,0 +1,66 @@
+name: Build staging APK
+
+# Kicks off an EAS cloud build (Expo's servers do the work — no local
+# Java or Android SDK needed). The `preview` profile in eas.json bakes
+# EXPO_PUBLIC_API_URL=https://api.stage.scraptrove.com so the resulting
+# APK talks to the staging worker.
+#
+# Trigger this manually from the Actions tab, or on every push to
+# `main` / `durai` if you want each merge to auto-produce a new APK.
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS profile (preview = staging, production = live)'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+  push:
+    branches:
+      - main
+      - durai
+    paths:
+      - 'src/**'
+      - 'app.json'
+      - 'eas.json'
+      - 'package.json'
+      - '.github/workflows/build-staging-apk.yml'
+
+jobs:
+  build:
+    name: EAS cloud build (${{ github.event.inputs.profile || 'preview' }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Trigger cloud build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is missing. Add it at Repo > Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          eas build \
+            --platform android \
+            --profile ${{ github.event.inputs.profile || 'preview' }} \
+            --non-interactive \
+            --no-wait
+          echo "APK build queued. Watch progress + download the .apk at https://expo.dev/accounts/duraimurugan12c/projects/scraptrove/builds"
