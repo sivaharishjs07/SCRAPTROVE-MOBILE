@@ -15,7 +15,10 @@ dist/
 *.mobileprovision
 *.orig.*
 web-build/
-google-services.json
+# google-services.json IS committed — it's the Firebase project identifier
+# that ships inside every APK anyway, so keeping it in the repo is standard
+# practice and required for cloud (EAS) builds. It is NOT a service-account
+# key. The real Firebase secret (Admin SDK JSON) lives only on the worker.
 GoogleService-Info.plist
 .DS_Store
 Thumbs.db

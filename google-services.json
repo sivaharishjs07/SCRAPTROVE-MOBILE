@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "615941722468",
+    "project_id": "scrapx-india",
+    "storage_bucket": "scrapx-india.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615941722468:android:3f6bb672c6ea677755aa71",
+        "android_client_info": {
+          "package_name": "com.scraptrove.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhjnV6Jz4bYTPZIzKMDdFes6xEqb3xVEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615941722468:android:fe5b3fa69e185af355aa71",
+        "android_client_info": {
+          "package_name": "com.scrapx.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhjnV6Jz4bYTPZIzKMDdFes6xEqb3xVEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
