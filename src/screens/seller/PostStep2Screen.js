@@ -46,15 +46,13 @@ const MATERIALS = [
   { id: 'mixed',       en: 'Mixed / Other',      ta: 'கலவை / மற்றவை'       },
 ];
 
-// Weight brackets + pickup-fee schedule.
-// Below-50 kg pickups carry a small ₹30 fee to cover fuel and labour; anything
-// 50 kg and above is free. The fee is stored on the order (worker: orders.
-// pickup_fee) so admin sees exactly what was charged.
+// Weight brackets — pickup is FREE at every bracket. `fee` is kept as a key
+// so downstream code (order payload, admin display) stays intact; value is
+// zero everywhere.
 const WEIGHT_OPTIONS = [
-  { label: '15–30 kg',      fee: 30, ta: '15–30 கிலோ' },
-  { label: '30–50 kg',      fee: 30, ta: '30–50 கிலோ' },
-  { label: '50–75 kg',      fee: 0,  ta: '50–75 கிலோ' },
-  { label: '75–100 kg',     fee: 0,  ta: '75–100 கிலோ' },
+  { label: '30–50 kg',      fee: 0, ta: '30–50 கிலோ' },
+  { label: '50–75 kg',      fee: 0, ta: '50–75 கிலோ' },
+  { label: '75–100 kg',     fee: 0, ta: '75–100 கிலோ' },
   { label: 'More than 100 kg', fee: 0, ta: '100 கிலோவுக்கு மேல்' },
 ];
 
@@ -141,8 +139,8 @@ export default function PostStep2Screen({ navigation }) {
         <View style={styles.minBadge}>
           <Text style={styles.minBadgeText}>
             ⚖️ {language === 'ta'
-              ? 'குறைந்தது 30 கிலோ தேவை · 50 கிலோவுக்கு கீழ் ₹30 பிக்கப் கட்டணம்'
-              : 'Minimum 30 kg per pickup · ₹30 pickup fee for orders below 50 kg'}
+              ? 'குறைந்தது 30 கிலோ தேவை · எல்லா பிக்கப்பும் இலவசம்'
+              : 'Minimum 30 kg per pickup · Free pickup at every bracket'}
           </Text>
         </View>
         {WEIGHT_OPTIONS.map(w => (
