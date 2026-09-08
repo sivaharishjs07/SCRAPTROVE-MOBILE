@@ -141,8 +141,8 @@ export default function PostStep2Screen({ navigation }) {
         <View style={styles.minBadge}>
           <Text style={styles.minBadgeText}>
             ⚖️ {language === 'ta'
-              ? 'குறைந்தது 15 கிலோ தேவை · 50 கிலோவுக்கு கீழ் ₹30 பிக்கப் கட்டணம்'
-              : 'Minimum 15 kg per pickup · ₹30 pickup fee for orders below 50 kg'}
+              ? 'குறைந்தது 30 கிலோ தேவை · 50 கிலோவுக்கு கீழ் ₹30 பிக்கப் கட்டணம்'
+              : 'Minimum 30 kg per pickup · ₹30 pickup fee for orders below 50 kg'}
           </Text>
         </View>
         {WEIGHT_OPTIONS.map(w => (
