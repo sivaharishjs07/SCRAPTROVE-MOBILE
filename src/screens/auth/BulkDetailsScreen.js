@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../../context/AppContext';
 import { sellerSetup } from '../../services/api';
 import { FONTS } from '../../constants/typography';
-import { STATES, getDistricts, getCities, getCityIdAsync } from '../../constants/locations';
+import { useLocations, statesList, getDistricts, getCities, getCityIdAsync } from '../../constants/locations';
 
 // Bulk / industrial-seller onboarding.
 // Mirrors the web LoginPage bulk-register flow — contact person + company
@@ -74,8 +74,12 @@ export default function BulkDetailsScreen({ route, navigation }) {
   const [gpsStatus,  setGpsStatus]  = useState(null); // 'success' | 'error' | null
   const [submitting, setSubmitting] = useState(false);
 
-  const districts = useMemo(() => getDistricts(state) || [], [state]);
-  const cities    = useMemo(() => getCities(state, district) || [], [state, district]);
+  // Subscribes this screen to the City Master. Re-renders as the tree
+  // fetches resolve. Reading loc.districts / loc.cities also triggers
+  // the corresponding lazy fetch.
+  const loc       = useLocations();
+  const districts = useMemo(() => loc.districts(state)             || [], [state, loc]);
+  const cities    = useMemo(() => loc.cities(state, district)      || [], [state, district, loc]);
 
   // ── Location helpers ──────────────────────────────────────────────────────
   const fetchGPS = async () => {
@@ -292,7 +296,7 @@ export default function BulkDetailsScreen({ route, navigation }) {
             placeholder="State"
             open={stateOpen}
             setOpen={setStateOpen}
-            options={STATES}
+            options={loc.states}
             onSelect={(v) => { setState(v); setDistrict(''); setCity(''); }}
           />
           <Picker

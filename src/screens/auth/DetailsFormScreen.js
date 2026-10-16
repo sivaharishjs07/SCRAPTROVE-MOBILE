@@ -10,7 +10,7 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
-import { STATES, districts, cities, getCityIdAsync } from '../../constants/locations';
+import { useLocations, statesList, districts, cities, getCityIdAsync } from '../../constants/locations';
 import { VEHICLES } from '../../constants/vehicles';
 import { PickerModal, PickerBtn } from '../../components/LocationPickerModal';
 import { sellerSetup, dealerRegister, uploadPhoto } from '../../services/api';
@@ -107,6 +107,9 @@ const pg = StyleSheet.create({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────────
 export default function DetailsFormScreen({ navigation, route }) {
+  // Subscribe to the City Master so state / district / city pickers
+  // reflect the admin-managed tree and re-render when the fetch lands.
+  const loc = useLocations();
   const { phone, role } = route.params || {};
   const { language, login } = useApp();
   const isDealer = role === 'dealer';
@@ -379,7 +382,7 @@ export default function DetailsFormScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <PickerModal visible={picker === 'state'} title="Select State"
-          items={STATES} onSelect={onPickState} onClose={() => setPicker(null)} />
+          items={loc.states} onSelect={onPickState} onClose={() => setPicker(null)} />
         <PickerModal visible={picker === 'district'} title="Select District"
           items={districts(state)} onSelect={onPickDistrict} onClose={() => setPicker(null)} />
         <PickerModal visible={picker === 'city'} title="Select City / Area"
@@ -460,7 +463,7 @@ export default function DetailsFormScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <PickerModal visible={picker === 'state'} title="Select State"
-        items={STATES} onSelect={onPickState} onClose={() => setPicker(null)} />
+        items={loc.states} onSelect={onPickState} onClose={() => setPicker(null)} />
       <PickerModal visible={picker === 'district'} title="Select District"
         items={districts(state)} onSelect={onPickDistrict} onClose={() => setPicker(null)} />
       <PickerModal visible={picker === 'city'} title="Select City / Area"
