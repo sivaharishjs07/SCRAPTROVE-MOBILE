@@ -55,7 +55,6 @@ export default function SellerHomeScreen({ navigation }) {
   const [rates, setRates] = useState([]);
   const [totalPickups, setTotalPickups] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
-  const [totalKg, setTotalKg] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const hour = new Date().getHours();
@@ -83,14 +82,20 @@ export default function SellerHomeScreen({ navigation }) {
           icon_url: r.icon_url || null,
         })));
       }
-      if (ordersRes?.data?.orders) {
-        const done = ordersRes.data.orders.filter(o => o.status === 'completed');
+      // GET /api/orders/seller returns a PLAIN ARRAY. This used to read
+      // `data.orders`, which never exists, so Pickups and Earned were
+      // permanently stuck at zero while the Pickups tab showed the real
+      // figures. Accept both shapes so it can't silently break again.
+      const ordersData = Array.isArray(ordersRes?.data)
+        ? ordersRes.data
+        : (ordersRes?.data?.orders || []);
+      {
+        const done = ordersData.filter(o => o.status === 'completed');
         setTotalPickups(done.length);
-        // Prefer the dealer-entered amount_paid; fall back to est_max, then
-        // legacy 'amount' for any historical rows.
+        // Only money actually handed over counts as earned. est_max is an
+        // upper estimate, not a payment, so it must never be summed here.
         setTotalEarned(done.reduce((s, o) =>
-          s + (Number(o.amount_paid) || Number(o.est_max) || Number(o.amount) || 0), 0));
-        setTotalKg(done.reduce((s, o) => s + (o.weight_kg || 0), 0));
+          s + (Number(o.amount_paid) || Number(o.amount) || 0), 0));
       }
     } catch { /* keep current state */ }
     setRefreshing(false);
@@ -191,7 +196,6 @@ export default function SellerHomeScreen({ navigation }) {
           {[
             { icon: '📦', value: totalPickups.toString(), label: language === 'ta' ? 'பிக்கப்' : 'Pickups' },
             { icon: '💰', value: `₹${totalEarned}`,       label: language === 'ta' ? 'சம்பாதித்தது' : 'Earned' },
-            { icon: '♻️', value: `${totalKg} kg`,          label: language === 'ta' ? 'மறுசுழற்சி' : 'Recycled' },
           ].map((s, i) => (
             <View key={i} style={styles.statPill}>
               <Text style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</Text>

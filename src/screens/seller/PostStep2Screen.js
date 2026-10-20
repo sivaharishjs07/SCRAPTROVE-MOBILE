@@ -1,5 +1,5 @@
 /**
- * PostStep2Screen — Step 2 of 4: Material Type + Estimated Weight
+ * PostStep2Screen — Step 2 of 4: Estimated Weight + Material Type
  * Multi-select materials (min 1, no max limit)
  */
 import React, { useState, useEffect, useMemo } from 'react';
@@ -126,10 +126,49 @@ export default function PostStep2Screen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.stepTitle}>{language === 'ta' ? 'என்ன விற்கிறீர்கள்?' : 'What are you selling?'}</Text>
-        <Text style={styles.stepSub}>{language === 'ta' ? 'பொருட்களை தேர்ந்தெடுங்கள் (ஒன்று அல்லது அதிகம்)' : 'Select one or more material types'}</Text>
+        <Text style={styles.stepSub}>{language === 'ta' ? 'எடையை தேர்ந்தெடுத்து, பின் பொருட்களை தேர்ந்தெடுங்கள்' : 'Pick the weight, then choose what you are selling'}</Text>
+
+        {/* Weight — asked first: it sets expectations about the minimum
+            before the seller starts picking individual materials. */}
+        <Text style={styles.sectionLabel}>
+          {language === 'ta' ? 'எடை அளவு *' : 'Estimated Weight *'}
+        </Text>
+        <View style={styles.minBadge}>
+          <Text style={styles.minBadgeText}>
+            ⚖️ {language === 'ta'
+              ? 'குறைந்தது 30 கிலோ தேவை · எல்லா பிக்கப்பும் இலவசம்'
+              : 'Minimum 30 kg per pickup · Free pickup at every bracket'}
+          </Text>
+        </View>
+        {WEIGHT_OPTIONS.map(w => (
+          <TouchableOpacity
+            key={w.label}
+            style={[styles.weightRow, weight === w.label && styles.weightRowActive]}
+            onPress={() => handleSetWeight(w.label)}
+            activeOpacity={0.8}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.weightLabel, weight === w.label && styles.weightLabelActive]}>
+                {language === 'ta' ? w.ta : w.label}
+              </Text>
+              {w.fee > 0 ? (
+                <Text style={styles.feeHint}>
+                  {language === 'ta' ? `₹${w.fee} பிக்கப் கட்டணம்` : `₹${w.fee} pickup fee`}
+                </Text>
+              ) : (
+                <Text style={styles.feeFree}>
+                  {language === 'ta' ? '✓ இலவச பிக்கப்' : '✓ Free pickup'}
+                </Text>
+              )}
+            </View>
+            <View style={[styles.radio, weight === w.label && styles.radioActive]}>
+              {weight === w.label && <View style={styles.radioDot} />}
+            </View>
+          </TouchableOpacity>
+        ))}
 
         {/* Material — multi-select */}
-        <View style={styles.sectionRow}>
+        <View style={[styles.sectionRow, { marginTop: 26 }]}>
           <Text style={styles.sectionLabel}>{language === 'ta' ? 'பொருள் வகை *' : 'Material Type *'}</Text>
           {materials.length > 0 && (
             <Text style={styles.selectedCount}>{materials.length} selected</Text>
@@ -191,44 +230,6 @@ export default function PostStep2Screen({ navigation }) {
             </View>
           ))
         )}
-
-        {/* Weight */}
-        <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
-          {language === 'ta' ? 'எடை அளவு *' : 'Estimated Weight *'}
-        </Text>
-        <View style={styles.minBadge}>
-          <Text style={styles.minBadgeText}>
-            ⚖️ {language === 'ta'
-              ? 'குறைந்தது 30 கிலோ தேவை · எல்லா பிக்கப்பும் இலவசம்'
-              : 'Minimum 30 kg per pickup · Free pickup at every bracket'}
-          </Text>
-        </View>
-        {WEIGHT_OPTIONS.map(w => (
-          <TouchableOpacity
-            key={w.label}
-            style={[styles.weightRow, weight === w.label && styles.weightRowActive]}
-            onPress={() => handleSetWeight(w.label)}
-            activeOpacity={0.8}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.weightLabel, weight === w.label && styles.weightLabelActive]}>
-                {language === 'ta' ? w.ta : w.label}
-              </Text>
-              {w.fee > 0 ? (
-                <Text style={styles.feeHint}>
-                  {language === 'ta' ? `₹${w.fee} பிக்கப் கட்டணம்` : `₹${w.fee} pickup fee`}
-                </Text>
-              ) : (
-                <Text style={styles.feeFree}>
-                  {language === 'ta' ? '✓ இலவச பிக்கப்' : '✓ Free pickup'}
-                </Text>
-              )}
-            </View>
-            <View style={[styles.radio, weight === w.label && styles.radioActive]}>
-              {weight === w.label && <View style={styles.radioDot} />}
-            </View>
-          </TouchableOpacity>
-        ))}
 
         <View style={{ height: 100 }} />
       </ScrollView>

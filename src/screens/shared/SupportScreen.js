@@ -55,6 +55,8 @@ export default function SupportScreen({ navigation }) {
   const [tickets, setTickets]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  // Two-step flow, same as the website: choose the order, then the issue.
+  const [phase, setPhase] = useState('order');   // 'order' | 'issue'
   const [selectedType, setSelectedType] = useState(null);
   const [message, setMessage]     = useState('');
   const [creating, setCreating]   = useState(false);
@@ -78,16 +80,21 @@ export default function SupportScreen({ navigation }) {
 
   const openCreate = async () => {
     setShowCreate(true);
+    setPhase('order');
+    setSelectedOrder(null); setSelectedType(null); setMessage('');
     setOrdersLoading(true);
     try {
       const res = isDealer ? await getDealerOrders() : await getSellerOrders();
-      setOrders(Array.isArray(res.data) ? res.data : []);
+      setOrders(Array.isArray(res.data) ? res.data : (res.data?.orders || []));
     } catch { setOrders([]); }
     setOrdersLoading(false);
   };
 
+  const pickOrder = (o) => { setSelectedOrder(o); setPhase('issue'); };
+
   const closeModal = () => {
-    setShowCreate(false); setSelectedType(null); setMessage(''); setSelectedOrder(null);
+    setShowCreate(false); setPhase('order');
+    setSelectedType(null); setMessage(''); setSelectedOrder(null);
   };
 
   const handleCreate = async () => {
@@ -196,56 +203,80 @@ export default function SupportScreen({ navigation }) {
         >
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {language === 'ta' ? 'புதிய ஆதரவு கோரிக்கை' : 'New Support Request'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                {phase === 'issue' ? (
+                  <TouchableOpacity
+                    onPress={() => setPhase('order')}
+                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                    style={{ marginRight: 10 }}
+                  >
+                    <Text style={styles.modalBack}>←</Text>
+                  </TouchableOpacity>
+                ) : null}
+                <Text style={styles.modalTitle}>
+                  {phase === 'order'
+                    ? (language === 'ta' ? 'ஆர்டரை தேர்ந்தெடுக்கவும்' : 'Select an order')
+                    : (language === 'ta' ? 'பிரச்சனையை பதிவு செய்யவும்' : 'Raise an issue')}
+                </Text>
+              </View>
               <TouchableOpacity onPress={closeModal} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <Text style={styles.modalLabel}>
-                {language === 'ta' ? 'எந்த ஆர்டர் குறித்து?' : 'Which order is this about?'}
-              </Text>
-              {ordersLoading ? (
-                <ActivityIndicator color={C.green} style={{ marginVertical: 16 }} />
-              ) : orders.length === 0 ? (
-                <View style={styles.noOrders}>
-                  <Text style={styles.noOrdersText}>
-                    {language === 'ta'
-                      ? 'ஆதரவு கோரிக்கை ஒரு ஆர்டருடன் இணைக்கப்பட வேண்டும். நீங்கள் இன்னும் பிக்கப் பதிவு செய்யவில்லை.'
-                      : 'A support request must be linked to an order, and you have not booked a pickup yet.'}
+              {phase === 'order' ? (
+                <>
+                  <Text style={styles.modalLabel}>
+                    {language === 'ta' ? 'எந்த ஆர்டர் குறித்து?' : 'Which order is this about?'}
                   </Text>
-                </View>
+                  {ordersLoading ? (
+                    <ActivityIndicator color={C.green} style={{ marginVertical: 24 }} />
+                  ) : orders.length === 0 ? (
+                    <View style={styles.noOrders}>
+                      <Text style={styles.noOrdersEmoji}>📦</Text>
+                      <Text style={styles.noOrdersTitle}>
+                        {language === 'ta' ? 'உங்களிடம் ஆர்டர்கள் இல்லை' : "You don't have any orders"}
+                      </Text>
+                      <Text style={styles.noOrdersText}>
+                        {language === 'ta'
+                          ? 'ஆதரவு கோரிக்கை ஒரு ஆர்டருடன் இணைக்கப்பட வேண்டும். முதலில் ஒரு பிக்கப் பதிவு செய்யுங்கள்.'
+                          : 'A support request is always raised against an order. Book a pickup first, then you can raise an issue about it.'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.orderList}>
+                      {orders.map(o => (
+                        <TouchableOpacity
+                          key={o.id}
+                          style={styles.orderRow}
+                          onPress={() => pickOrder(o)}
+                          activeOpacity={0.75}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.orderRef}>{o.order_ref || `#${o.id}`}</Text>
+                            <Text style={styles.orderMeta} numberOfLines={1}>
+                              {formatDate(o.created_at)}
+                              {o.status ? ` · ${o.status}` : ''}
+                            </Text>
+                          </View>
+                          <Text style={styles.orderChevron}>›</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
               ) : (
-                <View style={styles.orderList}>
-                  {orders.slice(0, 10).map(o => {
-                    const sel = selectedOrder?.id === o.id;
-                    return (
-                      <TouchableOpacity
-                        key={o.id}
-                        style={[styles.orderRow, sel && styles.orderRowSel]}
-                        onPress={() => setSelectedOrder(o)}
-                        activeOpacity={0.75}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.orderRef, sel && { color: C.green }]}>
-                            {o.order_ref || `#${o.id}`}
-                          </Text>
-                          <Text style={styles.orderMeta} numberOfLines={1}>
-                            {formatDate(o.created_at)}
-                            {o.status ? ` · ${o.status}` : ''}
-                          </Text>
-                        </View>
-                        {sel && <Text style={styles.orderTick}>✓</Text>}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
+                <>
+              {/* Keeps the chosen order visible while the issue is picked. */}
+              <View style={styles.orderPinned}>
+                <Text style={styles.orderPinnedLabel}>{language === 'ta' ? 'ஆர்டர்' : 'ORDER'}</Text>
+                <Text style={styles.orderPinnedRef}>
+                  {selectedOrder?.order_ref || `#${selectedOrder?.id}`}
+                </Text>
+              </View>
 
-              <Text style={[styles.modalLabel, { marginTop: 20 }]}>
+              <Text style={[styles.modalLabel, { marginTop: 18 }]}>
                 {language === 'ta' ? 'பிரச்சனை வகை' : 'What is your issue?'}
               </Text>
               <View style={styles.issueGrid}>
@@ -283,9 +314,9 @@ export default function SupportScreen({ navigation }) {
               />
 
               <TouchableOpacity
-                style={[styles.submitBtn, (!selectedOrder || !selectedType || message.trim().length < 10) && { opacity: 0.5 }]}
+                style={[styles.submitBtn, (!selectedType || message.trim().length < 10) && { opacity: 0.5 }]}
                 onPress={handleCreate}
-                disabled={creating || !selectedOrder || !selectedType || message.trim().length < 10}
+                disabled={creating || !selectedType || message.trim().length < 10}
               >
                 {creating
                   ? <ActivityIndicator color="#fff" />
@@ -294,6 +325,8 @@ export default function SupportScreen({ navigation }) {
                     </Text>
                 }
               </TouchableOpacity>
+                </>
+              )}
               <View style={{ height: 20 }} />
             </ScrollView>
           </View>
@@ -347,14 +380,22 @@ const styles = StyleSheet.create({
   modalClose: { fontFamily: FONTS.bold, fontSize: 20, color: C.sub },
   modalLabel: { fontFamily: FONTS.extraBold, fontSize: 12, color: C.light, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
 
+  modalBack:   { fontFamily: FONTS.bold, fontSize: 20, color: C.green },
+
   orderList:   { gap: 8 },
-  orderRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1.5, borderColor: C.bdr, backgroundColor: '#F9FAFB' },
-  orderRowSel: { borderColor: C.green, backgroundColor: C.greenLt },
+  orderRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 12, borderWidth: 1.5, borderColor: C.bdr, backgroundColor: '#F9FAFB' },
   orderRef:    { fontFamily: FONTS.bold, fontSize: 13, color: C.text },
   orderMeta:   { fontFamily: FONTS.regular, fontSize: 11, color: C.sub, marginTop: 2 },
-  orderTick:   { fontFamily: FONTS.black, fontSize: 14, color: C.green },
-  noOrders:    { backgroundColor: C.amberLt, borderWidth: 1, borderColor: '#FDE68A', borderRadius: 12, padding: 12 },
-  noOrdersText:{ fontFamily: FONTS.semiBold, fontSize: 12, color: '#92400E', lineHeight: 18 },
+  orderChevron:{ fontFamily: FONTS.bold, fontSize: 22, color: C.light },
+
+  orderPinned:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.greenLt, borderWidth: 1, borderColor: C.greenBdr, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
+  orderPinnedLabel:{ fontFamily: FONTS.bold, fontSize: 10, color: C.sub, letterSpacing: 0.6 },
+  orderPinnedRef:  { fontFamily: FONTS.bold, fontSize: 13, color: C.green },
+
+  noOrders:     { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 16 },
+  noOrdersEmoji:{ fontSize: 40, marginBottom: 10 },
+  noOrdersTitle:{ fontFamily: FONTS.bold, fontSize: 15, color: C.text, marginBottom: 6, textAlign: 'center' },
+  noOrdersText: { fontFamily: FONTS.regular, fontSize: 12.5, color: C.sub, lineHeight: 19, textAlign: 'center' },
 
   issueGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   issueChip: {

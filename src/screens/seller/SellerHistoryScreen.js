@@ -50,11 +50,11 @@ export default function SellerHistoryScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  // Use the actual amount the dealer marked paid on completion; fall back
-  // to the pre-pickup high estimate only if the dealer forgot to enter it.
+  // Only the amount actually paid at pickup counts. est_max is the
+  // pre-pickup upper estimate, never a payment, so it is not summed here.
   const totalEarned = orders
     .filter(o => o.status === 'completed')
-    .reduce((s, o) => s + (Number(o.amount_paid) || Number(o.est_max) || 0), 0);
+    .reduce((s, o) => s + (Number(o.amount_paid) || 0), 0);
   const completedCount = orders.filter(o => o.status === 'completed').length;
 
   const displayStatus = (status) => {
@@ -111,8 +111,12 @@ export default function SellerHistoryScreen({ navigation }) {
         </View>
 
         <View style={styles.orderFooter}>
-          {item.status === 'completed' && item.est_max > 0 && (
-            <Text style={styles.orderAmount}>₹{item.est_max}</Text>
+          {/* The amount received, matching the website's "Amount Received"
+              on order details. This previously showed est_max — the upper
+              estimate — so a completed order displayed a figure the seller
+              was never paid. */}
+          {item.status === 'completed' && Number(item.amount_paid) > 0 && (
+            <Text style={styles.orderAmount}>₹{Number(item.amount_paid).toLocaleString('en-IN')}</Text>
           )}
           {item.estimated_weight ? (
             <Text style={styles.orderWeight}>{item.estimated_weight}</Text>

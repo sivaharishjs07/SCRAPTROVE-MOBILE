@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList,
-  TouchableOpacity, Share, RefreshControl,
+  TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../constants/translations';
@@ -24,6 +24,10 @@ const parseApiRates = (data) => {
     icon_url: r.icon_url || null,
     cat:      r.cat      || '',
     price:   r.market_price ?? r.p1 ?? 0,
+    // Buying range as set in admin. Shown as "₹p1–₹p2", the same line the
+    // booking screen and the website use, instead of a single figure.
+    p1:      r.p1 ?? null,
+    p2:      r.p2 ?? null,
     change:  r.trend === 'up' ? 1 : r.trend === 'down' ? -1 : 0,
     unit:    r.unit    || 'kg',
   }));
@@ -54,17 +58,6 @@ export default function ScrapRatesScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const handleShare = async () => {
-    const ratesList = rates.map(r =>
-      `• ${language === 'ta' ? r.name_ta : r.name_en}: ₹${r.price}/${r.unit}`
-    ).join('\n');
-
-    const message = language === 'ta'
-      ? `📊 இன்றைய சென்னை ஸ்கிராப் விலைகள் (${today})\n\n${ratesList}\n\n♻️ Scrap Trove App மூலம் உங்கள் ஸ்கிராப் விற்கலாம்!`
-      : `📊 Today's Chennai Scrap Rates (${today})\n\n${ratesList}\n\n♻️ Sell your scrap via Scrap Trove App!`;
-
-    await Share.share({ message });
-  };
 
   const renderRate = ({ item }) => {
     const name        = language === 'ta' ? item.name_ta : item.name_en;
@@ -86,7 +79,11 @@ export default function ScrapRatesScreen({ navigation }) {
           <Text style={styles.rateUnit}>per {item.unit}</Text>
         </View>
         <View style={styles.ratePriceBox}>
-          <Text style={styles.ratePrice}>₹{item.price}</Text>
+          <Text style={styles.ratePrice}>
+            {(item.p1 != null && item.p2 != null && item.p1 !== item.p2)
+              ? `₹${item.p1}–₹${item.p2}`
+              : `₹${item.p1 ?? item.price}`}
+          </Text>
           {item.change !== 0 && (
             <Text style={[styles.rateChange, { color: changeColor }]}>
               {changeSymbol} {Math.abs(item.change)}
@@ -114,9 +111,6 @@ export default function ScrapRatesScreen({ navigation }) {
           <Text style={styles.headerTitle}>{t('todays_scrap_rates', language)}</Text>
           <Text style={styles.headerDate}>{t('last_updated', language)}: {today}</Text>
         </View>
-        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-          <Text style={styles.shareBtnText}>↑ {t('share_rates', language)}</Text>
-        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -147,11 +141,6 @@ const styles = StyleSheet.create({
   backText: { fontFamily: FONTS.bold, fontSize: 22, color: COLORS.primary },
   headerTitle: { fontFamily: FONTS.black, fontSize: 17, color: COLORS.text, marginBottom: 2 },
   headerDate: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.textSecondary },
-  shareBtn: {
-    backgroundColor: COLORS.primaryLight, paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 20, borderWidth: 1, borderColor: COLORS.primary + '44',
-  },
-  shareBtnText: { color: COLORS.primary, fontFamily: FONTS.bold, fontSize: 13 },
   tip: {
     backgroundColor: COLORS.accentLight, paddingHorizontal: 16, paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: COLORS.accent + '33',
