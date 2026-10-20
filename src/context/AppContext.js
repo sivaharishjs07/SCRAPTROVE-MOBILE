@@ -17,8 +17,9 @@ const EMPTY_DRAFT = {
   slot:     null,   // date label (scheduled only)
   timeSlot: null,   // time slot (scheduled only)
   // Step 2 — Materials & weight
-  materials: [],
-  weight:    null,
+  materials:     [],   // numeric product IDs from GET /api/products
+  materialNames: [],   // their display names, captured at selection time
+  weight:        null,
   // Step 3 — Address
   addressLine1: '',
   addressLine2: '',

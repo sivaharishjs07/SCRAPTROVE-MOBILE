@@ -2,12 +2,13 @@
  * PostStep2Screen — Step 2 of 4: Material Type + Estimated Weight
  * Multi-select materials (min 1, no max limit)
  */
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import ProductIconChip from '../../components/ProductIconChip';
+import api from '../../services/api';
 
 const C = {
   bg:      '#FFFFFF',
@@ -24,27 +25,12 @@ const C = {
   amberBdr:'#FDE68A',
 };
 
-const MATERIALS = [
-  { id: 'iron',        en: 'Iron',               ta: 'இரும்பு'              },
-  { id: 'steel',       en: 'Steel',              ta: 'எஃகு'                },
-  { id: 'steel_utensil',en:'Steel Utensils',     ta: 'எஃகு பாத்திரங்கள்'   },
-  { id: 'copper',      en: 'Copper',             ta: 'தாமிரம்'             },
-  { id: 'brass',       en: 'Brass',              ta: 'பித்தளை'             },
-  { id: 'aluminium',   en: 'Aluminium',          ta: 'அலுமினியம்'          },
-  { id: 'paper',       en: 'Paper / Cardboard',  ta: 'காகிதம் / அட்டை'    },
-  { id: 'newspaper',   en: 'Newspaper',          ta: 'செய்தித்தாள்'        },
-  { id: 'books',       en: 'Books',              ta: 'புத்தகங்கள்'          },
-  { id: 'plastic_hard',en: 'Plastic (Hard)',     ta: 'பிளாஸ்டிக் (கடினம்)' },
-  { id: 'plastic_pet', en: 'Plastic Bottles',    ta: 'பிளாஸ்டிக் பாட்டில்' },
-  { id: 'mobile',      en: 'Mobile / Laptop',    ta: 'மொபைல் / லேப்டாப்'   },
-  { id: 'tv',          en: 'TV / Monitor',       ta: 'TV / மானிட்டர்'      },
-  { id: 'washing',     en: 'Washing Machine',    ta: 'வாஷிங் மெஷின்'       },
-  { id: 'fridge',      en: 'Fridge / AC',        ta: 'ஃப்ரிட்ஜ் / AC'     },
-  { id: 'battery',     en: 'Batteries',          ta: 'பேட்டரிகள்'           },
-  { id: 'tyre',        en: 'Tyres / Wheels',     ta: 'டயர் / சக்கரம்'      },
-  { id: 'ewaste',      en: 'E-Waste / Electronic',ta:'மின்னணு கழிவு'       },
-  { id: 'mixed',       en: 'Mixed / Other',      ta: 'கலவை / மற்றவை'       },
-];
+// Materials come from GET /api/products — the same catalogue the seller
+// website and admin use. This screen used to carry a hardcoded list plus a
+// `MATERIAL_PRODUCT_MAP` of guessed product IDs; most of those IDs were
+// wrong or did not exist, so orders were filed against the wrong product
+// (e.g. "Newspaper" was sent as product 12 = Single Door Fridge). Never
+// reintroduce a hardcoded list here — add the product in admin instead.
 
 // Weight brackets — pickup is FREE at every bracket. `fee` is kept as a key
 // so downstream code (order payload, admin display) stays intact; value is
@@ -59,16 +45,54 @@ const WEIGHT_OPTIONS = [
 export default function PostStep2Screen({ navigation }) {
   const { language, orderDraft, setOrderDraft } = useApp();
 
-  // Initialise from saved draft so back-navigation restores selections
+  // Initialise from saved draft so back-navigation restores selections.
+  // Draft materials are numeric product IDs.
   const [materials, setMaterials] = useState(orderDraft.materials?.length ? orderDraft.materials : []);
   const [weight,    setWeight]    = useState(orderDraft.weight ?? null);
+
+  const [products,    setProducts]    = useState([]);
+  const [loadingPro,  setLoadingPro]  = useState(true);
+  const [productError, setProductError] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setLoadingPro(true);
+    setProductError(false);
+    api.get('/products')
+      .then(res => {
+        if (!alive) return;
+        const list = Array.isArray(res.data) ? res.data : [];
+        setProducts(list.filter(p => p.is_active !== 0));
+      })
+      .catch(() => { if (alive) setProductError(true); })
+      .finally(() => { if (alive) setLoadingPro(false); });
+    return () => { alive = false; };
+  }, []);
+
+  // Group by the product's own category, same as the website's picker.
+  const grouped = useMemo(() => {
+    const groups = {};
+    products.forEach(p => {
+      const cat = p.cat || 'Other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(p);
+    });
+    Object.values(groups).forEach(g => g.sort((a, b) => a.name.localeCompare(b.name)));
+    return groups;
+  }, [products]);
 
   const canNext = materials.length > 0 && !!weight;
 
   const toggleMaterial = (id) => {
     setMaterials(prev => {
       const next = prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id];
-      setOrderDraft({ materials: next });
+      // Carry the display names too so step 4 and the order summary don't
+      // need their own copy of the catalogue.
+      const names = next
+        .map(pid => products.find(p => p.id === pid))
+        .filter(Boolean)
+        .map(p => (language === 'ta' && p.name_ta) ? p.name_ta : p.name);
+      setOrderDraft({ materials: next, materialNames: names });
       return next;
     });
   };
@@ -112,25 +136,48 @@ export default function PostStep2Screen({ navigation }) {
           )}
         </View>
 
-        <View style={styles.materialGrid}>
-          {MATERIALS.map(m => {
-            const isSelected = materials.includes(m.id);
-            return (
-              <TouchableOpacity
-                key={m.id}
-                style={[styles.materialCard, isSelected && styles.materialCardActive]}
-                onPress={() => toggleMaterial(m.id)}
-                activeOpacity={0.8}
-              >
-                <ProductIconChip name={m.en} size={16} chipSize={32} />
-                <Text style={[styles.materialLabel, isSelected && { color: C.green }]}>
-                  {language === 'ta' ? m.ta : m.en}
-                </Text>
-                {isSelected && <Text style={styles.checkMark}>✓</Text>}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        {loadingPro ? (
+          <View style={styles.proLoading}>
+            <ActivityIndicator color={C.green} />
+            <Text style={styles.proLoadingText}>
+              {language === 'ta' ? 'பொருட்கள் ஏற்றப்படுகிறது…' : 'Loading materials…'}
+            </Text>
+          </View>
+        ) : productError || products.length === 0 ? (
+          <View style={styles.proError}>
+            <Text style={styles.proErrorText}>
+              {language === 'ta'
+                ? 'பொருட்கள் பட்டியலை ஏற்ற முடியவில்லை. இணையத்தை சரிபார்த்து மீண்டும் முயற்சிக்கவும்.'
+                : "Couldn't load the materials list. Check your connection and try again."}
+            </Text>
+          </View>
+        ) : (
+          Object.entries(grouped).map(([cat, items]) => (
+            <View key={cat} style={{ marginBottom: 18 }}>
+              <Text style={styles.catLabel}>{cat}</Text>
+              <View style={styles.materialGrid}>
+                {items.map(p => {
+                  const isSelected = materials.includes(p.id);
+                  const label = (language === 'ta' && p.name_ta) ? p.name_ta : p.name;
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[styles.materialCard, isSelected && styles.materialCardActive]}
+                      onPress={() => toggleMaterial(p.id)}
+                      activeOpacity={0.8}
+                    >
+                      <ProductIconChip name={p.name} size={16} chipSize={32} />
+                      <Text style={[styles.materialLabel, isSelected && { color: C.green }]}>
+                        {label}
+                      </Text>
+                      {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ))
+        )}
 
         {/* Weight */}
         <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
@@ -209,6 +256,13 @@ const styles = StyleSheet.create({
   sectionRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   sectionLabel:   { fontFamily: FONTS.semiBold, fontSize: 14, color: C.text },
   selectedCount:  { fontFamily: FONTS.bold, fontSize: 12, color: C.green, backgroundColor: C.mint, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
+
+  catLabel: { fontFamily: FONTS.bold, fontSize: 10, color: C.sub, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
+
+  proLoading:     { paddingVertical: 28, alignItems: 'center', gap: 10 },
+  proLoadingText: { fontFamily: FONTS.semiBold, fontSize: 13, color: C.sub },
+  proError:       { backgroundColor: C.amberBg, borderWidth: 1, borderColor: C.amberBdr, borderRadius: 12, padding: 14 },
+  proErrorText:   { fontFamily: FONTS.semiBold, fontSize: 13, color: '#92400E', lineHeight: 19 },
 
   materialGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   materialCard: {

@@ -35,9 +35,9 @@ const STEPS = [
   },
   {
     icon:    '⚖️',
-    title:   'Verified dealer at your door',
+    title:   'Our trained team at your door',
     desc:    'Calibrated digital scale, you watch every kilo land',
-    title_ta:'சரிபார்க்கப்பட்ட டீலர் உங்கள் வீட்டிற்கே',
+    title_ta:'எங்கள் பயிற்சி பெற்ற குழு உங்கள் வீட்டிற்கே',
     desc_ta: 'சரியான டிஜிட்டல் தராசு, ஒவ்வொரு கிலோவையும் நீங்களே பாருங்கள்',
   },
   {
@@ -142,7 +142,7 @@ export default function SellerHomeScreen({ navigation }) {
                 {language === 'ta' ? 'உங்கள் ஆர்டர் செயலில் உள்ளது' : 'Your order is active'}
               </Text>
               <Text style={styles.activeBannerSub}>
-                {language === 'ta' ? 'டீலர் வருகிறார்' : 'Dealer is on the way'}
+                {language === 'ta' ? 'எங்கள் குழு வருகிறது' : 'Our team is on the way'}
               </Text>
             </View>
             <Text style={styles.activeBannerArrow}>→</Text>
@@ -161,8 +161,8 @@ export default function SellerHomeScreen({ navigation }) {
           </Text>
           <Text style={styles.heroSub}>
             {language === 'ta'
-              ? 'சரிபார்க்கப்பட்ட டீலர், டிஜிட்டல் தராசு, UPI பணம்'
-              : 'Verified dealer, on-site digital scale, instant UPI'}
+              ? 'எங்கள் சொந்த குழு, டிஜிட்டல் தராசு, UPI பணம்'
+              : 'Our own trained team, on-site digital scale, instant UPI'}
           </Text>
           <View style={styles.heroActions}>
             <TouchableOpacity

@@ -105,7 +105,7 @@ export default function SellerHistoryScreen({ navigation }) {
           <Text style={styles.orderDate}>{formatDate(item.created_at)}</Text>
           {dealerName ? (
             <Text style={styles.orderDealer}>
-              {language === 'ta' ? 'டீலர்: ' : 'Dealer: '}{dealerName}
+              {language === 'ta' ? 'குழு: ' : 'Team: '}{dealerName}
             </Text>
           ) : null}
         </View>

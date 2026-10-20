@@ -16,21 +16,21 @@ const STATUS_INFO = (lang) => ({
   broadcast: {
     emoji: '✅', color: COLORS.success,
     label: lang === 'ta' ? 'ஆர்டர் பதிவாகியது!' : 'Order Placed!',
-    desc: lang === 'ta' ? 'உங்கள் ஆர்டர் பதிவு செய்யப்பட்டது. டீலர் விரைவில் ஒதுக்கப்படுவார்.' : 'Your order is submitted. A dealer will be assigned shortly.',
+    desc: lang === 'ta' ? 'உங்கள் ஆர்டர் பதிவு செய்யப்பட்டது. எங்கள் குழு விரைவில் ஒதுக்கப்படும்.' : 'Your order is submitted. Our pickup team will be assigned shortly.',
   },
   accepted: {
     emoji: '🤝', color: COLORS.primary,
     label: lang === 'ta' ? 'ஆர்டர் ஏற்கப்பட்டது' : 'Order Accepted',
-    desc: lang === 'ta' ? 'ஒரு டீலர் உங்கள் ஆர்டரை ஏற்றுக்கொண்டார்' : 'A dealer has been assigned to your order',
+    desc: lang === 'ta' ? 'எங்கள் குழு உங்கள் ஆர்டருக்கு ஒதுக்கப்பட்டது' : 'Our pickup team has been assigned to your order',
   },
   on_way: {
     emoji: '🚛', color: COLORS.primary,
-    label: lang === 'ta' ? 'டீலர் வருகிறார்' : 'Dealer On The Way',
-    desc: lang === 'ta' ? 'டீலர் உங்களிடம் வருகிறார்' : 'Your dealer is headed your way',
+    label: lang === 'ta' ? 'எங்கள் குழு வருகிறது' : 'Pickup Team On The Way',
+    desc: lang === 'ta' ? 'எங்கள் குழு உங்களிடம் வருகிறது' : 'Our pickup team is headed your way',
   },
   arrived: {
     emoji: '🏠', color: COLORS.primary,
-    label: lang === 'ta' ? 'டீலர் வந்துவிட்டார்' : 'Dealer Arrived!',
+    label: lang === 'ta' ? 'எங்கள் குழு வந்துவிட்டது' : 'Pickup Team Arrived!',
     desc: lang === 'ta' ? 'கதவை திறந்து வரவேற்கவும்' : 'Please open the door',
   },
   completed: {
@@ -112,8 +112,8 @@ export default function OrderStatusScreen({ navigation, route }) {
       language === 'ta' ? 'காரணம் தேர்வு செய்யவும்' : 'Please select a reason',
       [
         {
-          text: language === 'ta' ? 'வேறு இடத்தில் கண்டேன்' : 'Found dealer elsewhere',
-          onPress: () => doCancel('Found dealer elsewhere'),
+          text: language === 'ta' ? 'வேறு இடத்தில் விற்றுவிட்டேன்' : 'Sold it elsewhere',
+          onPress: () => doCancel('Sold it elsewhere'),
         },
         {
           text: language === 'ta' ? 'மனம் மாறிவிட்டேன்' : 'Changed my mind',
@@ -133,7 +133,7 @@ export default function OrderStatusScreen({ navigation, route }) {
     if (!phone) {
       Alert.alert(
         language === 'ta' ? 'கிடைக்கவில்லை' : 'Unavailable',
-        language === 'ta' ? 'டீலர் தொலைபேசி கிடைக்கவில்லை' : 'Dealer contact not available yet.'
+        language === 'ta' ? 'எங்கள் குழு தொலைபேசி கிடைக்கவில்லை' : 'Pickup team contact not available yet.'
       );
       return;
     }

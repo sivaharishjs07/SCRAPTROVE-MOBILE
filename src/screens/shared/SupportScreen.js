@@ -18,7 +18,7 @@ const C = {
 const ISSUE_TYPES = [
   { key: 'order_issue',   en: 'Order Issue',       ta: 'ஆர்டர் பிரச்சனை',  icon: '📦' },
   { key: 'payment_issue', en: 'Payment Issue',     ta: 'பணம் பிரச்சனை',     icon: '💰' },
-  { key: 'dealer_issue',  en: 'Dealer Behaviour',  ta: 'டீலர் நடத்தை',      icon: '🚛' },
+  { key: 'dealer_issue',  en: 'Pickup Team Behaviour', ta: 'எங்கள் குழு நடத்தை',      icon: '🚛' },
   { key: 'app_problem',   en: 'App Problem',       ta: 'ஆப் பிரச்சனை',      icon: '📱' },
   { key: 'account_issue', en: 'Account Issue',     ta: 'கணக்கு பிரச்சனை',   icon: '👤' },
   { key: 'other',         en: 'Other',             ta: 'மற்றவை',             icon: '💬' },

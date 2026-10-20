@@ -136,7 +136,22 @@ export default function PostStep3Screen({ navigation }) {
     navigation.navigate('PostStep4');
   };
 
+  // Small sellers must keep at least one saved address — the worker enforces
+  // this too (DELETE /api/addresses/:id returns 400 on the last one), but
+  // without this guard the user would tap 🗑 and get a raw server error.
+  // This screen is the small-seller flow only; bulk uses BulkPostFlow.
+  const isLastAddress = saved.length <= 1;
+
   const removeSaved = (a) => {
+    if (isLastAddress) {
+      Alert.alert(
+        language === 'ta' ? 'ஒரு முகவரி தேவை' : 'One address is required',
+        language === 'ta'
+          ? 'பிக்கப்பிற்கு குறைந்தது ஒரு முகவரி வேண்டும். புதிய முகவரியை சேர்த்த பிறகு இதை நீக்கலாம்.'
+          : 'You need at least one saved address for pickups. Add a new address first, then you can remove this one.',
+      );
+      return;
+    }
     Alert.alert(
       language === 'ta' ? 'நீக்கவா?' : 'Delete address?',
       language === 'ta' ? 'இந்த முகவரி நிரந்தரமாக நீக்கப்படும்.' : 'This address will be permanently removed.',
@@ -394,7 +409,7 @@ export default function PostStep3Screen({ navigation }) {
           <Text style={styles.stepSub}>
             {subStep === 'list'
               ? (language === 'ta' ? 'சேமிக்கப்பட்ட முகவரி தேர்ந்தெடுக்கவும் அல்லது புதிது சேர்க்கவும்.' : 'Pick a saved address or add a new one.')
-              : (language === 'ta' ? 'டீலர் எங்கு வர வேண்டும்?' : 'Where should the dealer come?')}
+              : (language === 'ta' ? 'எங்கள் குழு எங்கு வர வேண்டும்?' : 'Where should our team come?')}
           </Text>
 
           {/* ── Address book list (saved addresses + Add-new tile) ── */}
@@ -430,9 +445,12 @@ export default function PostStep3Screen({ navigation }) {
                         </Text>
                         <Text style={styles.savedRowPin}>📍 {a.pincode}</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.savedDeleteBtn} onPress={() => removeSaved(a)}>
-                        <Text style={styles.savedDeleteTxt}>🗑</Text>
-                      </TouchableOpacity>
+                      {/* Hidden on the last address — a small seller must keep one. */}
+                      {!isLastAddress ? (
+                        <TouchableOpacity style={styles.savedDeleteBtn} onPress={() => removeSaved(a)}>
+                          <Text style={styles.savedDeleteTxt}>🗑</Text>
+                        </TouchableOpacity>
+                      ) : null}
                     </View>
                   ))}
                   <TouchableOpacity

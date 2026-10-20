@@ -61,7 +61,7 @@ export default function AboutScreen({ navigation }) {
               <Text style={styles.infoText}>
                 {language === 'ta'
                   ? 'சென்னையில் ரத்துப் பொருட்களை மறுசுழற்சி செய்வதை எளிமையாகவும் வேகமாகவும் மாற்றுவது எங்கள் குறிக்கோள்.'
-                  : 'To make scrap recycling easy, fast and accessible across Chennai — connecting sellers with trusted dealers at the click of a button.'}
+                  : 'To make scrap recycling easy, fast and accessible across Chennai — bringing our own trained pickup team to your door at the click of a button.'}
               </Text>
             </View>
           </View>

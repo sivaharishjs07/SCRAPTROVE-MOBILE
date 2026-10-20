@@ -32,7 +32,30 @@ const C = {
   amber700:'#92400E',
 };
 
-const TIME_SLOTS = ['10am – 12pm', '12pm – 2pm', '2pm – 4pm', '4pm – 6pm'];
+// Slots match the seller website exactly (two wide windows, not four short
+// ones) so a scheduled order looks the same in admin whichever surface it
+// came from. A slot is only offered for today while at least
+// SLOT_MIN_LEAD_HOURS remain before it ends, so the UI never suggests a
+// window ops can't staff.
+const SLOT_MIN_LEAD_HOURS = 2;
+const SLOT_META = [
+  { label: '9 AM – 2 PM', endHour: 14 },
+  { label: '2 PM – 8 PM', endHour: 20 },
+];
+const TIME_SLOTS = SLOT_META.map(s => s.label);
+
+function slotsAvailableFor(iso, now = new Date()) {
+  if (!iso) return TIME_SLOTS;
+  if (iso !== now.toISOString().slice(0, 10)) return TIME_SLOTS;
+  const nowMs = now.getTime();
+  return SLOT_META
+    .filter(s => {
+      const end = new Date(now);
+      end.setHours(s.endHour, 0, 0, 0);
+      return end.getTime() - nowMs >= SLOT_MIN_LEAD_HOURS * 3600000;
+    })
+    .map(s => s.label);
+}
 
 // Human label for an ISO date. Today / Tomorrow, else "Sat, 15 Aug".
 const isoToday = () => new Date().toISOString().slice(0, 10);
@@ -84,6 +107,16 @@ export default function PostStep1Screen({ navigation }) {
     }
   }, [instantEnabled, availableDates, type, slot, setOrderDraft]);
 
+  // Time slots open for the chosen date — today is filtered by wall-clock.
+  const openTimeSlots = slotsAvailableFor(slot);
+
+  // If the chosen window has since passed the lead-time cutoff, drop it.
+  useEffect(() => {
+    if (timeSlot && !openTimeSlots.includes(timeSlot)) {
+      setTimeSlot(null); setOrderDraft({ timeSlot: null });
+    }
+  }, [openTimeSlots, timeSlot, setOrderDraft]);
+
   const handleSetType     = (v) => { setType(v); setOrderDraft({ type: v, slot: null, timeSlot: null }); };
   const handleSetSlot     = (v) => { setSlot(v); setOrderDraft({ slot: v }); };
   const handleSetTimeSlot = (v) => { setTimeSlot(v); setOrderDraft({ timeSlot: v }); };
@@ -117,7 +150,7 @@ export default function PostStep1Screen({ navigation }) {
           {language === 'ta' ? 'பிக்கப் வகை தேர்ந்தெடுங்கள்' : 'Choose Pickup Type'}
         </Text>
         <Text style={styles.stepSub}>
-          {language === 'ta' ? 'எப்போது டீலர் வர வேண்டும்?' : 'When should the dealer arrive?'}
+          {language === 'ta' ? 'எப்போது எங்கள் குழு வர வேண்டும்?' : 'When should our team arrive?'}
         </Text>
 
         {loading && (
@@ -143,7 +176,7 @@ export default function PostStep1Screen({ navigation }) {
                 </Text>
                 <Text style={styles.typeSub}>
                   {instantEnabled
-                    ? (language === 'ta' ? '3 மணி நேரத்தில் வருவோம்' : 'Dealer arrives within 3 hours')
+                    ? (language === 'ta' ? '3 மணி நேரத்தில் வருவோம்' : 'Our team arrives within 3 hours')
                     : (language === 'ta' ? 'இப்போது கிடைக்கவில்லை' : 'Not available right now')}
                 </Text>
               </View>
@@ -222,18 +255,26 @@ export default function PostStep1Screen({ navigation }) {
                 <Text style={styles.subLabel}>
                   {language === 'ta' ? 'நேர இடைவெளி' : 'Time Slot'}
                 </Text>
-                <View style={styles.chipRow}>
-                  {TIME_SLOTS.map(t => (
-                    <TouchableOpacity
-                      key={t}
-                      style={[styles.chip, timeSlot === t && styles.chipActive]}
-                      onPress={() => handleSetTimeSlot(t)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={[styles.chipText, timeSlot === t && styles.chipTextActive]}>{t}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                {openTimeSlots.length === 0 ? (
+                  <Text style={styles.slotNote}>
+                    {language === 'ta'
+                      ? 'இன்றைக்கு நேரம் முடிந்துவிட்டது — நாளை அல்லது அதற்குப் பிறகு ஒரு தேதியை தேர்ந்தெடுக்கவும்.'
+                      : "Today's slots have closed — please pick tomorrow or a later date."}
+                  </Text>
+                ) : (
+                  <View style={styles.chipRow}>
+                    {openTimeSlots.map(t => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[styles.chip, timeSlot === t && styles.chipActive]}
+                        onPress={() => handleSetTimeSlot(t)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.chipText, timeSlot === t && styles.chipTextActive]}>{t}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </>
             )}
           </>
@@ -301,6 +342,7 @@ const styles = StyleSheet.create({
   emptyBannerBody:  { fontFamily: FONTS.regular, fontSize: 13, color: C.amber700, lineHeight: 18 },
 
   subLabel: { fontFamily: FONTS.semiBold, fontSize: 13, color: C.text, marginTop: 16, marginBottom: 4 },
+  slotNote: { fontFamily: FONTS.semiBold, fontSize: 12, color: C.amber700, backgroundColor: C.amber50, borderWidth: 1, borderColor: C.amber200, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, lineHeight: 18 },
   subHint:  { fontFamily: FONTS.regular, fontSize: 11, color: C.sub, marginBottom: 10, lineHeight: 16 },
   chipRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip:       { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5, borderColor: C.bdr, backgroundColor: C.surface },

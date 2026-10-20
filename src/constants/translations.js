@@ -6,7 +6,7 @@ export const translations = {
     // Auth
     welcome_title: 'Scrap Trove',
     welcome_subtitle: 'The Scrap Pickup Marketplace',
-    welcome_tagline: 'Sell scrap from home.\nDealers come to you.',
+    welcome_tagline: 'Sell scrap from home.\nOur team comes to you.',
     get_started: 'Get Started',
     enter_phone: 'Enter Phone Number',
     phone_placeholder: 'Mobile Number',
@@ -71,17 +71,17 @@ export const translations = {
     notes_placeholder: 'e.g. 2 old fans, newspapers bundle...',
     post_request: 'Post Pickup Request',
     posting: 'Posting...',
-    request_posted: 'Request posted! Finding dealers...',
+    request_posted: 'Request posted! Assigning our team...',
     max_photos: 'Maximum 3 photos allowed',
 
     // Order Status
-    finding_dealer: 'Finding Dealer...',
-    dealer_found: 'Dealer Found!',
-    dealer_on_way: 'Dealer On The Way',
-    dealer_arrived: 'Dealer Arrived',
+    finding_dealer: 'Assigning Team...',
+    dealer_found: 'Team Assigned!',
+    dealer_on_way: 'Pickup Team On The Way',
+    dealer_arrived: 'Pickup Team Arrived',
     pickup_complete: 'Pickup Complete',
     cancel_order: 'Cancel Order',
-    call_dealer: 'Call Dealer',
+    call_dealer: 'Call Pickup Team',
     eta: 'ETA',
     minutes_away: 'min away',
     rate_dealer: 'Rate Your Dealer',
@@ -160,7 +160,7 @@ export const translations = {
     last_updated: 'Last updated',
     per_kg: 'per kg',
     share_rates: 'Share Rates',
-    rates_disclaimer: 'Rates may vary by area and dealer. Use as reference.',
+    rates_disclaimer: 'Rates may vary by area and material quality. Use as reference.',
 
     // Profile
     my_profile: 'My Profile',
@@ -271,10 +271,10 @@ export const translations = {
     finding_dealer: 'டீலரை தேடுகிறோம்...',
     dealer_found: 'டீலர் கிடைத்தார்!',
     dealer_on_way: 'டீலர் வருகிறார்',
-    dealer_arrived: 'டீலர் வந்துவிட்டார்',
+    dealer_arrived: 'எங்கள் குழு வந்துவிட்டது',
     pickup_complete: 'பிக்கப் முடிந்தது',
     cancel_order: 'ஆர்டர் ரத்து செய்',
-    call_dealer: 'டீலரை அழை',
+    call_dealer: 'குழுவை அழை',
     eta: 'வரும் நேரம்',
     minutes_away: 'நிமிடம்',
     rate_dealer: 'டீலரை மதிப்பிடு',
@@ -353,7 +353,7 @@ export const translations = {
     last_updated: 'கடைசியாக புதுப்பிக்கப்பட்டது',
     per_kg: 'கிலோவுக்கு',
     share_rates: 'விலைகளை பகிர்',
-    rates_disclaimer: 'விலைகள் இடம் மற்றும் டீலரைப் பொறுத்து மாறலாம்.',
+    rates_disclaimer: 'விலைகள் இடம் மற்றும் பொருள் தரத்தைப் பொறுத்து மாறலாம்.',
 
     // Profile
     my_profile: 'என் சுயவிவரம்',

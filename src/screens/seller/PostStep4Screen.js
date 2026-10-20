@@ -27,44 +27,18 @@ const C = {
   redBg:   '#FEF2F2',
 };
 
-// All 19 material labels (matches PostStep2Screen IDs)
-const MATERIAL_LABELS = {
-  iron:         'Iron',
-  steel:        'Steel',
-  steel_utensil:'Steel Utensils',
-  copper:       'Copper',
-  brass:        'Brass',
-  aluminium:    'Aluminium',
-  paper:        'Paper / Cardboard',
-  newspaper:    'Newspaper',
-  books:        'Books',
-  plastic_hard: 'Plastic (Hard)',
-  plastic_pet:  'Plastic Bottles',
-  mobile:       'Mobile / Laptop',
-  tv:           'TV / Monitor',
-  washing:      'Washing Machine',
-  fridge:       'Fridge / AC',
-  battery:      'Batteries',
-  tyre:         'Tyres / Wheels',
-  ewaste:       'E-Waste / Electronic',
-  mixed:        'Mixed / Other',
-};
-
-// Material → backend product ID (best-effort mapping)
-const MATERIAL_PRODUCT_MAP = {
-  iron: 1, steel: 1, steel_utensil: 8, copper: 2, brass: 4,
-  aluminium: 3, paper: 5, newspaper: 12, books: 13,
-  plastic_hard: 7, plastic_pet: 7, mobile: 14, tv: 9,
-  washing: 11, fridge: 10, battery: 15, tyre: 17,
-  ewaste: 18, mixed: 17,
-};
+// Material labels and product IDs now come from the live catalogue via
+// PostStep2Screen (GET /api/products), which writes both the selected
+// product IDs and their display names into the order draft. The old
+// hardcoded MATERIAL_LABELS / MATERIAL_PRODUCT_MAP tables are gone: their
+// guessed IDs did not match the real catalogue.
 
 export default function PostStep4Screen({ navigation }) {
   const { language, setActiveOrder, updateUser, orderDraft, setOrderDraft, clearOrderDraft, saveAddress, user } = useApp();
 
   // Read all order data from context draft (populated by steps 1–3)
   const {
-    type, slot, timeSlot, materials, weight,
+    type, slot, timeSlot, materials, materialNames, weight,
     address, addressLine1, addressLine2, landmark, pincode, addrType, coords,
   } = orderDraft;
 
@@ -75,11 +49,10 @@ export default function PostStep4Screen({ navigation }) {
   const [photoError, setPhotoError] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Build human-readable material string from array
-  const materialsList = Array.isArray(materials) ? materials : (materials ? [materials] : []);
-  const materialsLabel = materialsList
-    .map(id => MATERIAL_LABELS[id] || id)
-    .join(', ');
+  // Selected product IDs, and the display names step 2 captured alongside them.
+  const materialsList = (Array.isArray(materials) ? materials : (materials ? [materials] : []))
+    .filter(id => Number.isInteger(id));
+  const materialsLabel = (Array.isArray(materialNames) ? materialNames : []).join(', ');
 
   // ── Custom photo picker bottom sheet ──────────────────────────────────────
   const addPhoto = () => {
@@ -174,11 +147,8 @@ export default function PostStep4Screen({ navigation }) {
     }
     try {
 
-      // Build items array — deduplicate product IDs
-      const productIds = [...new Set(
-        materialsList.map(id => MATERIAL_PRODUCT_MAP[id] || 17)
-      )];
-      const items = productIds.map(pid => ({ product_id: pid, quantity: 1 }));
+      // Selected products are already real catalogue IDs — just dedupe.
+      const items = [...new Set(materialsList)].map(pid => ({ product_id: pid, quantity: 1 }));
 
       const payload = {
         type:             type || 'instant',
@@ -189,7 +159,7 @@ export default function PostStep4Screen({ navigation }) {
         slot_date:        type === 'scheduled' ? slot : null,
         slot_time:        type === 'scheduled' ? timeSlot : null,
         note:             notes,
-        estimated_weight: weight || '10–20 kg',
+        estimated_weight: weight || '30–50 kg',
         material:         materialsLabel,
         items,
         photo_urls:       photoUrls,
@@ -354,14 +324,14 @@ export default function PostStep4Screen({ navigation }) {
 
         {/* Notes */}
         <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
-          📝 {language === 'ta' ? 'குறிப்புகள்' : 'Notes to Dealer'}{' '}
+          📝 {language === 'ta' ? 'குறிப்புகள்' : 'Notes to Our Team'}{' '}
           ({language === 'ta' ? 'விரும்பினால்' : 'Optional'})
         </Text>
         <TextInput
           style={styles.notesInput}
           value={notes}
           onChangeText={t => { setNotes(t); setOrderDraft({ notes: t }); }}
-          placeholder={language === 'ta' ? 'டீலருக்கு சொல்ல வேண்டுமா?' : 'Any special instructions for the dealer?'}
+          placeholder={language === 'ta' ? 'எங்கள் குழு-விடம் சொல்ல வேண்டுமா?' : 'Any special instructions for our team?'}
           placeholderTextColor={C.light}
           multiline
           numberOfLines={3}
