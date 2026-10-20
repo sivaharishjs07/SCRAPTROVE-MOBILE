@@ -20,13 +20,16 @@ const parseApiRates = (data) => {
     name_en: r.name    || r.name_en || '',
     name_ta: r.name_ta || r.name    || '',
     emoji:   r.icon    || '♻️',
+    // The admin-uploaded product photo, preferred over the fallback icon.
+    icon_url: r.icon_url || null,
+    cat:      r.cat      || '',
     price:   r.market_price ?? r.p1 ?? 0,
     change:  r.trend === 'up' ? 1 : r.trend === 'down' ? -1 : 0,
     unit:    r.unit    || 'kg',
   }));
 };
 
-export default function ScrapRatesScreen() {
+export default function ScrapRatesScreen({ navigation }) {
   const { language } = useApp();
   const [rates, setRates]         = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +73,14 @@ export default function ScrapRatesScreen() {
 
     return (
       <View style={styles.rateRow}>
-        <ProductIconChip name={item.name_en || item.name || ''} size={20} chipSize={42} style={styles.iconChip} />
+        <ProductIconChip
+          iconUrl={item.icon_url}
+          name={item.name_en || item.name || ''}
+          cat={item.cat}
+          size={20}
+          chipSize={42}
+          style={styles.iconChip}
+        />
         <View style={styles.rateInfo}>
           <Text style={styles.rateName}>{name}</Text>
           <Text style={styles.rateUnit}>per {item.unit}</Text>
@@ -92,7 +102,15 @@ export default function ScrapRatesScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        {/* Back arrow only when this screen was pushed (small sellers open
+            it from "See all"). As a dealer tab there is nothing to go back
+            to, so it stays hidden. */}
+        {navigation?.canGoBack?.() ? (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+        ) : null}
+        <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{t('todays_scrap_rates', language)}</Text>
           <Text style={styles.headerDate}>{t('last_updated', language)}: {today}</Text>
         </View>
@@ -125,6 +143,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
   },
+  backBtn: { paddingRight: 12, paddingTop: 2 },
+  backText: { fontFamily: FONTS.bold, fontSize: 22, color: COLORS.primary },
   headerTitle: { fontFamily: FONTS.black, fontSize: 17, color: COLORS.text, marginBottom: 2 },
   headerDate: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.textSecondary },
   shareBtn: {

@@ -346,6 +346,10 @@ const AppNavigator = () => {
             <Stack.Screen name="BulkPostFlow" component={BulkPostFlow} />
             <Stack.Screen name="OrderStatus" component={OrderStatusScreen} />
             <Stack.Screen name="RateDealer"  component={RateDealerScreen} />
+            {/* Full market-rates list — opened from "See all" on the home
+                screen's Today's Prices strip. Small sellers only; bulk
+                pricing is quoted per lift, not published. */}
+            <Stack.Screen name="ScrapRates"  component={ScrapRatesScreen} />
             {/* Profile sub-screens */}
             <Stack.Screen name="MyDetails"    component={MyDetailsScreen} />
             <Stack.Screen name="AddressForm"  component={AddressFormScreen} />

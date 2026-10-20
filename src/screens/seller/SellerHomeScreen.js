@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { getSellerOrders, getScrapRates } from '../../services/api';
+import ProductIconChip from '../../components/ProductIconChip';
 
 // ─── Design tokens (white + green) ────────────────────────────────────────────
 const C = {
@@ -70,12 +71,16 @@ export default function SellerHomeScreen({ navigation }) {
       // Backend returns a plain array from /api/market-prices
       const ratesData = Array.isArray(ratesRes?.data) ? ratesRes.data : [];
       if (ratesData.length > 0) {
+        // Keep icon_url — that's the photo uploaded in admin → Market
+        // Prices, and it's what the chip shows in preference to an icon.
         setRates(ratesData.map(r => ({
-          name:    r.name    || '',
-          name_ta: r.name_ta || r.name || '',
-          price:   r.market_price ?? r.p1 ?? 0,
-          unit:    r.unit    || 'kg',
-          emoji:   r.icon    || '♻️',
+          name:     r.name    || '',
+          name_ta:  r.name_ta || r.name || '',
+          cat:      r.cat     || '',
+          price:    r.market_price ?? r.p1 ?? 0,
+          unit:     r.unit    || 'kg',
+          emoji:    r.icon    || '♻️',
+          icon_url: r.icon_url || null,
         })));
       }
       if (ordersRes?.data?.orders) {
@@ -215,14 +220,14 @@ export default function SellerHomeScreen({ navigation }) {
               <Text style={styles.sectionTitle}>
                 {language === 'ta' ? 'இன்றைய விலைகள்' : "Today's Prices"}
               </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('YardFinds')}>
+              <TouchableOpacity onPress={() => navigation.navigate('ScrapRates')}>
                 <Text style={styles.seeAll}>{language === 'ta' ? 'எல்லாம் பார் →' : 'See all →'}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.ratesGrid}>
               {rates.slice(0, 6).map((r, i) => (
                 <View key={i} style={styles.rateCard}>
-                  <Text style={{ fontSize: 26, marginBottom: 6 }}>{r.emoji}</Text>
+                  <ProductIconChip product={r} size={22} chipSize={40} style={{ marginBottom: 6 }} />
                   <Text style={styles.rateName}>{language === 'ta' ? r.name_ta : r.name}</Text>
                   <Text style={styles.ratePrice}>₹{r.price}</Text>
                   <Text style={styles.rateUnit}>/{r.unit}</Text>

@@ -3,7 +3,7 @@
  * Each type maps to a physically recognisable MaterialCommunityIcon.
  */
 import React from 'react';
-import { View } from 'react-native';
+import { View, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const RULES = [
@@ -52,8 +52,34 @@ function getConfig(name = '', cat = '') {
   return { icon: 'recycle', color: '#16A34A', bg: '#DCFCE7' };
 }
 
-export default function ProductIconChip({ name = '', cat = '', size = 22, chipSize = 44, style: extra }) {
-  const { icon, color, bg } = getConfig(name, cat);
+// Preferred usage: `<ProductIconChip product={p} />`. When the product has
+// an icon_url (the photo uploaded in admin → Market Prices) we show that
+// image, exactly like the seller website's ProductIcon. The rule-based
+// icon below is only a fallback for products with no photo yet.
+export default function ProductIconChip({
+  product, name, cat, iconUrl,
+  size = 22, chipSize = 44, style: extra,
+}) {
+  const url         = iconUrl ?? product?.icon_url;
+  const displayName = name ?? product?.name ?? '';
+  const displayCat  = cat  ?? product?.cat  ?? '';
+
+  if (url) {
+    return (
+      <Image
+        source={{ uri: url }}
+        resizeMode="contain"
+        style={[{
+          width: chipSize, height: chipSize,
+          borderRadius: Math.round(chipSize * 0.28),
+          backgroundColor: '#FFFFFF',
+          borderWidth: 1, borderColor: '#F1F5F9',
+        }, extra]}
+      />
+    );
+  }
+
+  const { icon, color, bg } = getConfig(displayName, displayCat);
   return (
     <View style={[{
       width: chipSize, height: chipSize,

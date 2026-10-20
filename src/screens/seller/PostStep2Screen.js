@@ -155,10 +155,18 @@ export default function PostStep2Screen({ navigation }) {
           Object.entries(grouped).map(([cat, items]) => (
             <View key={cat} style={{ marginBottom: 18 }}>
               <Text style={styles.catLabel}>{cat}</Text>
-              <View style={styles.materialGrid}>
+              <View style={styles.materialList}>
                 {items.map(p => {
                   const isSelected = materials.includes(p.id);
                   const label = (language === 'ta' && p.name_ta) ? p.name_ta : p.name;
+                  // Same rate line the website shows under each product.
+                  const lo = p.p1 ?? p.market_price;
+                  const hi = p.p2 ?? p.market_price;
+                  const rate = (lo == null && hi == null)
+                    ? null
+                    : (lo === hi || hi == null)
+                      ? `₹${lo} / ${p.unit || 'kg'}`
+                      : `₹${lo}–₹${hi} / ${p.unit || 'kg'}`;
                   return (
                     <TouchableOpacity
                       key={p.id}
@@ -166,11 +174,16 @@ export default function PostStep2Screen({ navigation }) {
                       onPress={() => toggleMaterial(p.id)}
                       activeOpacity={0.8}
                     >
-                      <ProductIconChip name={p.name} size={16} chipSize={32} />
-                      <Text style={[styles.materialLabel, isSelected && { color: C.green }]}>
-                        {label}
-                      </Text>
-                      {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                      <ProductIconChip product={p} size={20} chipSize={36} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.materialLabel, isSelected && { color: C.green }]}>
+                          {label}
+                        </Text>
+                        {rate ? <Text style={styles.materialRate}>{rate}</Text> : null}
+                      </View>
+                      <View style={[styles.checkBox, isSelected && styles.checkBoxOn]}>
+                        {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -264,16 +277,21 @@ const styles = StyleSheet.create({
   proError:       { backgroundColor: C.amberBg, borderWidth: 1, borderColor: C.amberBdr, borderRadius: 12, padding: 14 },
   proErrorText:   { fontFamily: FONTS.semiBold, fontSize: 13, color: '#92400E', lineHeight: 19 },
 
-  materialGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  materialList: { gap: 8 },
   materialCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 12, paddingVertical: 12, borderRadius: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14,
     borderWidth: 1.5, borderColor: C.bdr, backgroundColor: C.surface,
-    minWidth: '46%', flex: 1,
   },
   materialCardActive: { borderColor: C.green, backgroundColor: C.mint },
-  materialLabel: { fontFamily: FONTS.semiBold, fontSize: 13, color: C.text, flex: 1 },
-  checkMark:     { fontFamily: FONTS.black, fontSize: 13, color: C.green },
+  materialLabel: { fontFamily: FONTS.semiBold, fontSize: 13, color: C.text },
+  materialRate:  { fontFamily: FONTS.regular, fontSize: 11, color: C.sub, marginTop: 2 },
+  checkBox: {
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: C.bdr,
+    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+  },
+  checkBoxOn: { borderColor: C.green, backgroundColor: C.green },
+  checkMark:  { fontFamily: FONTS.black, fontSize: 13, color: '#FFFFFF' },
 
   minBadge: { backgroundColor: C.amberBg, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12, borderWidth: 1, borderColor: C.amberBdr },
   minBadgeText: { fontFamily: FONTS.bold, fontSize: 12, color: '#92400E' },
