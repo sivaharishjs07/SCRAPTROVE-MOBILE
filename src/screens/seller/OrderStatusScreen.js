@@ -290,6 +290,21 @@ export default function OrderStatusScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
+        {/* Raise an issue about THIS order — the website's primary entry
+            into support. Support is reached from an order because every
+            ticket is filed against one. */}
+        <TouchableOpacity
+          style={styles.raiseIssueBtn}
+          onPress={() => navigation.navigate('Support', { raiseForOrder: order })}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.raiseIssueText}>
+            ✉️ {language === 'ta'
+              ? 'இந்த ஆர்டர் குறித்து பிரச்சனை பதிவு செய்'
+              : 'Raise an Issue with this Order'}
+          </Text>
+        </TouchableOpacity>
+
         <View style={{ height: 32 }} />
       </ScrollView>
     </View>
@@ -384,4 +399,10 @@ const styles = StyleSheet.create({
   okBtnText:   { color: '#fff', fontFamily: FONTS.extraBold, fontSize: 16 },
   cancelBtn:   { marginHorizontal: 16, marginTop: 4, alignItems: 'center' },
   cancelBtnText: { color: COLORS.error, fontFamily: FONTS.semiBold, fontSize: 15 },
+  raiseIssueBtn: {
+    marginHorizontal: 16, marginTop: 14, paddingVertical: 14,
+    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, alignItems: 'center',
+  },
+  raiseIssueText: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.text },
 });

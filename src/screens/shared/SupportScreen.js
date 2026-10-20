@@ -46,8 +46,12 @@ const formatDate = (d) => {
   catch { return d; }
 };
 
-export default function SupportScreen({ navigation }) {
+export default function SupportScreen({ navigation, route }) {
   const { language, user } = useApp();
+  // When opened from an order ("Raise an Issue with this Order"), the order
+  // is already known, so the flow skips the picker and starts at the issue
+  // step — exactly as the website does.
+  const raiseForOrder = route?.params?.raiseForOrder || null;
   // This screen is mounted in both the seller and dealer stacks, so the
   // order list has to come from the right endpoint. The worker accepts a
   // ticket from either side of an order.
@@ -57,6 +61,9 @@ export default function SupportScreen({ navigation }) {
   const [showCreate, setShowCreate] = useState(false);
   // Two-step flow, same as the website: choose the order, then the issue.
   const [phase, setPhase] = useState('order');   // 'order' | 'issue'
+  // True when the sheet was opened from a specific order, so the issue
+  // step has no order list behind it to go back to.
+  const [orderLocked, setOrderLocked] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [message, setMessage]     = useState('');
   const [creating, setCreating]   = useState(false);
@@ -78,9 +85,24 @@ export default function SupportScreen({ navigation }) {
 
   useEffect(() => { loadTickets(); }, []);
 
+  // Arriving from an order: open the sheet straight at the issue step with
+  // that order locked in. The param is cleared so going back and returning
+  // doesn't reopen it.
+  useEffect(() => {
+    if (!raiseForOrder) return;
+    setSelectedOrder(raiseForOrder);
+    setSelectedType(null);
+    setMessage('');
+    setOrderLocked(true);
+    setPhase('issue');
+    setShowCreate(true);
+    navigation.setParams({ raiseForOrder: undefined });
+  }, [raiseForOrder, navigation]);
+
   const openCreate = async () => {
     setShowCreate(true);
     setPhase('order');
+    setOrderLocked(false);
     setSelectedOrder(null); setSelectedType(null); setMessage('');
     setOrdersLoading(true);
     try {
@@ -93,7 +115,7 @@ export default function SupportScreen({ navigation }) {
   const pickOrder = (o) => { setSelectedOrder(o); setPhase('issue'); };
 
   const closeModal = () => {
-    setShowCreate(false); setPhase('order');
+    setShowCreate(false); setPhase('order'); setOrderLocked(false);
     setSelectedType(null); setMessage(''); setSelectedOrder(null);
   };
 
@@ -143,6 +165,13 @@ export default function SupportScreen({ navigation }) {
             <Text style={[styles.statusText, { color: si.color }]}>{si.label}</Text>
           </View>
         </View>
+        {/* Every ticket belongs to an order — the worker joins order_ref,
+            so show which one, as the website's ticket list does. */}
+        {item.order_ref ? (
+          <Text style={styles.ticketOrder}>
+            {language === 'ta' ? 'ஆர்டர்' : 'Order'} · {item.order_ref}
+          </Text>
+        ) : null}
         <View style={styles.ticketMeta}>
           <Text style={styles.ticketRef}>{item.ticket_ref || `#${item.id}`}</Text>
           <Text style={styles.ticketDate}>{formatDate(item.created_at)}</Text>
@@ -204,7 +233,7 @@ export default function SupportScreen({ navigation }) {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                {phase === 'issue' ? (
+                {phase === 'issue' && !orderLocked ? (
                   <TouchableOpacity
                     onPress={() => setPhase('order')}
                     hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
@@ -361,6 +390,7 @@ const styles = StyleSheet.create({
   statusText: { fontFamily: FONTS.bold, fontSize: 12 },
   ticketMeta: { flexDirection: 'row', justifyContent: 'space-between' },
   ticketRef: { fontFamily: FONTS.regular, fontSize: 12, color: C.light },
+  ticketOrder: { fontFamily: FONTS.semiBold, fontSize: 11.5, color: C.green, marginTop: 4 },
   ticketDate: { fontFamily: FONTS.regular, fontSize: 12, color: C.light },
 
   empty: { paddingTop: 60, alignItems: 'center', paddingHorizontal: 32 },
