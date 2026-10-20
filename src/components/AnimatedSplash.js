@@ -105,14 +105,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   wordmark: {
-    width: SW * 0.55,
-    height: 48,
-    marginBottom: 12,
+    // Sized off screen width so it scales with the device. resizeMode is
+    // "contain", so the taller box lets the artwork render larger without
+    // distorting it.
+    width: SW * 0.78,
+    height: 72,
+    marginBottom: 14,
   },
   tagline: {
-    fontSize: 13,
+    fontSize: 16,
     color: '#4B5563',
-    letterSpacing: 3,
+    letterSpacing: 4,
     fontWeight: '600',
     textTransform: 'uppercase',
   },

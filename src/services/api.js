@@ -15,6 +15,12 @@ const BASE_URL = `${RUNTIME_API}/api`;
 // fetch in constants/locations.js).
 export const API_BASE = RUNTIME_API;
 
+// False when the build has no EXPO_PUBLIC_API_URL. Without this, a build
+// missing the variable produces relative '/api' requests that fail with a
+// plain network error — indistinguishable from bad signal, which sends
+// everyone chasing the wrong problem. Fail fast and say so instead.
+export const API_CONFIGURED = !!RUNTIME_API;
+
 const api = axios.create({
   baseURL: BASE_URL,
   // 30s covers spotty 4G — the previous 15s was firing false "network error"
@@ -25,6 +31,13 @@ const api = axios.create({
 
 // Attach auth token automatically
 api.interceptors.request.use(async (config) => {
+  if (!API_CONFIGURED) {
+    // Shaped like an axios error response so the screens that already read
+    // err.response.data.error surface this verbatim.
+    const e = new Error('API host not configured');
+    e.response = { status: 0, data: { error: 'This build has no server address configured (EXPO_PUBLIC_API_URL). Please install a build made from the preview or production profile.' } };
+    throw e;
+  }
   // Primary: logged-in user token
   const user = await AsyncStorage.getItem('user');
   if (user) {

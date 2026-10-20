@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { COLORS } from '../../constants/colors';
+import { API_BASE } from '../../services/api';
 
 const C = {
   bg:      '#FFFFFF',
@@ -101,6 +102,24 @@ export default function AboutScreen({ navigation }) {
                 {language === 'ta' ? 'பயன்பாட்டு பதிப்பு' : 'App Version'}
               </Text>
               <Text style={styles.infoText}>v1.0.2</Text>
+            </View>
+          </View>
+
+          {/* Which server this build talks to. Staging and production APKs
+              look identical otherwise, and a build with no server address
+              fails in a way that looks like a bad connection — this makes
+              both cases visible without guesswork. */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>{'🌐'}</Text>
+            <View style={styles.infoBody}>
+              <Text style={styles.infoTitle}>
+                {language === 'ta' ? 'சர்வர்' : 'Server'}
+              </Text>
+              <Text style={styles.infoText}>
+                {API_BASE
+                  ? API_BASE.replace(/^https?:\/\//, '')
+                  : (language === 'ta' ? 'அமைக்கப்படவில்லை' : 'Not configured')}
+              </Text>
             </View>
           </View>
 
