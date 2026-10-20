@@ -23,9 +23,13 @@ export const API_CONFIGURED = !!RUNTIME_API;
 
 const api = axios.create({
   baseURL: BASE_URL,
-  // 30s covers spotty 4G — the previous 15s was firing false "network error"
-  // alerts on the OTP verify step for real users on marginal signal.
-  timeout: 30000,
+  // The worker re-runs its full schema bootstrap on every cold isolate,
+  // which has been measured at ~30s on both staging and production. At the
+  // old 30s timeout those requests aborted on the exact boundary and the
+  // app blamed the user's connection, while un-timed fetch() calls on the
+  // same screen succeeded. 60s lets a cold request through; the real fix
+  // is on the worker side.
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -38,11 +42,15 @@ api.interceptors.request.use(async (config) => {
     e.response = { status: 0, data: { error: 'This build has no server address configured (EXPO_PUBLIC_API_URL). Please install a build made from the preview or production profile.' } };
     throw e;
   }
-  // Primary: logged-in user token
+  // Primary: logged-in user token. The parse is guarded because a throw in
+  // here rejects the request with no response at all, which every screen
+  // then reports as a connection problem — one corrupt stored value would
+  // break every axios call on the device while leaving fetch() working.
   const user = await AsyncStorage.getItem('user');
   if (user) {
-    const parsed = JSON.parse(user);
-    if (parsed.token && parsed.token !== 'demo-token') {
+    let parsed = null;
+    try { parsed = JSON.parse(user); } catch { parsed = null; }
+    if (parsed?.token && parsed.token !== 'demo-token') {
       config.headers.Authorization = `Bearer ${parsed.token}`;
       return config;
     }
@@ -52,6 +60,25 @@ api.interceptors.request.use(async (config) => {
   if (tempToken) config.headers.Authorization = `Bearer ${tempToken}`;
   return config;
 });
+
+// Turn a timeout into an honest message. Screens read
+// err.response.data.error for their alert text and otherwise fall back to
+// "check your connection", which is misleading when the phone is online
+// and the server simply took too long. Only synthesised when the request
+// genuinely came back with no response.
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const timedOut = err?.code === 'ECONNABORTED' || /timeout/i.test(err?.message || '');
+    if (timedOut && !err.response) {
+      err.response = {
+        status: 0,
+        data: { error: 'The server is taking too long to respond. Please wait a moment and try again.' },
+      };
+    }
+    return Promise.reject(err);
+  }
+);
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 // Backend expects { mobile, role } — NOT { phone }
