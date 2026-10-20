@@ -57,6 +57,15 @@ export default function OrderStatusScreen({ navigation, route }) {
   );
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Product names only. The worker builds order.material as "icon name"
+  // for single-order reads, so using it here printed emoji in front of
+  // every product. The items array carries the clean names; order.material
+  // stays as the fallback for bulk orders, which have no items rows.
+  const materialNames =
+    (Array.isArray(order.items) && order.items.length > 0
+      ? order.items.map(i => i.name).filter(Boolean).join(', ')
+      : '') || order.material || '—';
+
   useEffect(() => {
     if (status === 'broadcast') {
       const pulse = Animated.loop(
@@ -227,7 +236,7 @@ export default function OrderStatusScreen({ navigation, route }) {
           <View style={styles.orderInfoRow}>
             <Text style={styles.orderInfoLabel}>{language === 'ta' ? 'பொருள்' : 'Materials'}</Text>
             <Text style={styles.orderInfoValue} numberOfLines={2}>
-              {order.material || '—'}
+              {materialNames}
             </Text>
           </View>
           <View style={styles.orderInfoRow}>
