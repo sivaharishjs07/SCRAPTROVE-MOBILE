@@ -99,6 +99,7 @@ const BULK_CATS = [
       { en: 'Industrial Copper / Brass Scrap',                 ta: 'தொழிற்சாலை செம்பு / பித்தளை' },
       { en: 'Industrial Plastic Waste',                        ta: 'தொழிற்சாலை பிளாஸ்டிக்' },
       { en: 'Industrial Paper / Cardboard Waste',              ta: 'தொழிற்சாலை காகிதம் / அட்டை' },
+      { en: 'Industrial E-Waste / Circuit Boards',             ta: 'தொழிற்சாலை மின்கழிவு / சர்க்யூட் போர்டு' },
       { en: 'Industrial Wire & Cable Scrap',                   ta: 'கம்பி / cable ஸ்கிராப்' },
       { en: 'Other (specify)',                                 ta: 'மற்றது' },
     ],

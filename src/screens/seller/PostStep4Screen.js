@@ -56,8 +56,8 @@ export default function PostStep4Screen({ navigation }) {
 
   // ── Custom photo picker bottom sheet ──────────────────────────────────────
   const addPhoto = () => {
-    if (photos.length >= 3) {
-      Alert.alert('Maximum reached', 'You can add up to 3 photos.');
+    if (photos.length >= 5) {
+      Alert.alert('Maximum reached', 'You can add up to 5 photos.');
       return;
     }
     setPickerOpen(true);
@@ -308,7 +308,7 @@ export default function PostStep4Screen({ navigation }) {
               </TouchableOpacity>
             </View>
           ))}
-          {photos.length < 3 && (
+          {photos.length < 5 && (
             <TouchableOpacity
               style={[styles.photoAdd, photoError && photos.length === 0 && { borderColor: C.red }]}
               onPress={addPhoto}
@@ -319,7 +319,7 @@ export default function PostStep4Screen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.photoCount}>{photos.length}/3 added</Text>
+        <Text style={styles.photoCount}>{photos.length}/5 added</Text>
         {photoError ? <Text style={styles.errorText}>{photoError}</Text> : null}
 
         {/* Notes */}
@@ -376,7 +376,7 @@ export default function PostStep4Screen({ navigation }) {
               {language === 'ta' ? 'படம் சேர்க்கவும்' : 'Add Scrap Photo'}
             </Text>
             <Text style={styles.pickerSubtitle}>
-              {photos.length}/3 — {language === 'ta' ? 'ஸ்கிராப்பை தெளிவாக காட்டுங்கள்' : 'show the scrap clearly'}
+              {photos.length}/5 — {language === 'ta' ? 'ஸ்கிராப்பை தெளிவாக காட்டுங்கள்' : 'show the scrap clearly'}
             </Text>
 
             <View style={styles.pickerButtons}>

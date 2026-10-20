@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
-import { getTickets, createTicket } from '../../services/api';
+import { getTickets, createTicket, getSellerOrders, getDealerOrders } from '../../services/api';
 import { FONTS } from '../../constants/typography';
 
 const C = {
@@ -15,13 +15,18 @@ const C = {
   amber: '#D97706', amberLt: '#FFFBEB',
 };
 
+// `key` MUST match TICKET_ISSUE_TYPES on the worker — it validates
+// issue_type against that list and 400s on anything else. These used to be
+// snake_case values of our own ('order_issue', 'dealer_issue', …) that the
+// worker never accepted, so every ticket raised from the app failed. The
+// English text is the stored key; `ta` is display only.
 const ISSUE_TYPES = [
-  { key: 'order_issue',   en: 'Order Issue',       ta: 'ஆர்டர் பிரச்சனை',  icon: '📦' },
-  { key: 'payment_issue', en: 'Payment Issue',     ta: 'பணம் பிரச்சனை',     icon: '💰' },
-  { key: 'dealer_issue',  en: 'Pickup Team Behaviour', ta: 'எங்கள் குழு நடத்தை',      icon: '🚛' },
-  { key: 'app_problem',   en: 'App Problem',       ta: 'ஆப் பிரச்சனை',      icon: '📱' },
-  { key: 'account_issue', en: 'Account Issue',     ta: 'கணக்கு பிரச்சனை',   icon: '👤' },
-  { key: 'other',         en: 'Other',             ta: 'மற்றவை',             icon: '💬' },
+  { key: "Dealer didn't arrive",  en: "Pickup team didn't arrive", ta: 'குழு வரவில்லை',              icon: '🚛' },
+  { key: 'Wrong weight recorded', en: 'Wrong weight recorded',     ta: 'எடை தவறாக பதிவு',            icon: '⚖️' },
+  { key: 'Payment issue',         en: 'Payment issue',             ta: 'பணம் பிரச்சனை',              icon: '💰' },
+  { key: 'Rate dispute',          en: 'Rate dispute',              ta: 'விலை தகராறு',                icon: '💵' },
+  { key: 'Damaged / lost items',  en: 'Damaged / lost items',      ta: 'சேதம் / காணவில்லை',          icon: '📦' },
+  { key: 'Other',                 en: 'Other',                     ta: 'மற்றவை',                      icon: '💬' },
 ];
 
 const statusInfo = (s, lang) =>
@@ -42,13 +47,24 @@ const formatDate = (d) => {
 };
 
 export default function SupportScreen({ navigation }) {
-  const { language } = useApp();
+  const { language, user } = useApp();
+  // This screen is mounted in both the seller and dealer stacks, so the
+  // order list has to come from the right endpoint. The worker accepts a
+  // ticket from either side of an order.
+  const isDealer = user?.role === 'dealer';
   const [tickets, setTickets]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [message, setMessage]     = useState('');
   const [creating, setCreating]   = useState(false);
+
+  // A ticket must be attached to one of the seller's own orders — the
+  // worker requires order_id. Mirrors the website, where "Raise an Issue"
+  // is reached from a specific order.
+  const [orders, setOrders]           = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder]  = useState(null);
 
   const loadTickets = async () => {
     try {
@@ -60,9 +76,25 @@ export default function SupportScreen({ navigation }) {
 
   useEffect(() => { loadTickets(); }, []);
 
-  const closeModal = () => { setShowCreate(false); setSelectedType(null); setMessage(''); };
+  const openCreate = async () => {
+    setShowCreate(true);
+    setOrdersLoading(true);
+    try {
+      const res = isDealer ? await getDealerOrders() : await getSellerOrders();
+      setOrders(Array.isArray(res.data) ? res.data : []);
+    } catch { setOrders([]); }
+    setOrdersLoading(false);
+  };
+
+  const closeModal = () => {
+    setShowCreate(false); setSelectedType(null); setMessage(''); setSelectedOrder(null);
+  };
 
   const handleCreate = async () => {
+    if (!selectedOrder) {
+      Alert.alert(language === 'ta' ? 'ஆர்டரை தேர்வு செய்யவும்' : 'Select the order this is about');
+      return;
+    }
     if (!selectedType) {
       Alert.alert(language === 'ta' ? 'பிரச்சனை தேர்வு செய்யவும்' : 'Select an issue type');
       return;
@@ -73,7 +105,7 @@ export default function SupportScreen({ navigation }) {
     }
     setCreating(true);
     try {
-      const res = await createTicket(selectedType, message.trim());
+      const res = await createTicket(selectedOrder.id, selectedType, message.trim());
       if (res.data?.ticket_id) {
         closeModal();
         await loadTickets();
@@ -122,7 +154,7 @@ export default function SupportScreen({ navigation }) {
         <Text style={styles.headerTitle}>
           {language === 'ta' ? 'உதவி & ஆதரவு' : 'Help & Support'}
         </Text>
-        <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreate(true)}>
+        <TouchableOpacity style={styles.newBtn} onPress={openCreate}>
           <Text style={styles.newBtnText}>{language === 'ta' ? '+ புதியது' : '+ New'}</Text>
         </TouchableOpacity>
       </View>
@@ -146,7 +178,7 @@ export default function SupportScreen({ navigation }) {
                   ? '+ புதியது அழுத்தி ஒரு பிரச்சனை பதிவு செய்யுங்கள்'
                   : 'Tap + New to raise a support request'}
               </Text>
-              <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)}>
+              <TouchableOpacity style={styles.emptyBtn} onPress={openCreate}>
                 <Text style={styles.emptyBtnText}>
                   {language === 'ta' ? 'ஆதரவு கோரு' : 'Get Support'}
                 </Text>
@@ -174,6 +206,46 @@ export default function SupportScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.modalLabel}>
+                {language === 'ta' ? 'எந்த ஆர்டர் குறித்து?' : 'Which order is this about?'}
+              </Text>
+              {ordersLoading ? (
+                <ActivityIndicator color={C.green} style={{ marginVertical: 16 }} />
+              ) : orders.length === 0 ? (
+                <View style={styles.noOrders}>
+                  <Text style={styles.noOrdersText}>
+                    {language === 'ta'
+                      ? 'ஆதரவு கோரிக்கை ஒரு ஆர்டருடன் இணைக்கப்பட வேண்டும். நீங்கள் இன்னும் பிக்கப் பதிவு செய்யவில்லை.'
+                      : 'A support request must be linked to an order, and you have not booked a pickup yet.'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.orderList}>
+                  {orders.slice(0, 10).map(o => {
+                    const sel = selectedOrder?.id === o.id;
+                    return (
+                      <TouchableOpacity
+                        key={o.id}
+                        style={[styles.orderRow, sel && styles.orderRowSel]}
+                        onPress={() => setSelectedOrder(o)}
+                        activeOpacity={0.75}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.orderRef, sel && { color: C.green }]}>
+                            {o.order_ref || `#${o.id}`}
+                          </Text>
+                          <Text style={styles.orderMeta} numberOfLines={1}>
+                            {formatDate(o.created_at)}
+                            {o.status ? ` · ${o.status}` : ''}
+                          </Text>
+                        </View>
+                        {sel && <Text style={styles.orderTick}>✓</Text>}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              <Text style={[styles.modalLabel, { marginTop: 20 }]}>
                 {language === 'ta' ? 'பிரச்சனை வகை' : 'What is your issue?'}
               </Text>
               <View style={styles.issueGrid}>
@@ -211,9 +283,9 @@ export default function SupportScreen({ navigation }) {
               />
 
               <TouchableOpacity
-                style={[styles.submitBtn, (!selectedType || message.trim().length < 10) && { opacity: 0.5 }]}
+                style={[styles.submitBtn, (!selectedOrder || !selectedType || message.trim().length < 10) && { opacity: 0.5 }]}
                 onPress={handleCreate}
-                disabled={creating || !selectedType || message.trim().length < 10}
+                disabled={creating || !selectedOrder || !selectedType || message.trim().length < 10}
               >
                 {creating
                   ? <ActivityIndicator color="#fff" />
@@ -274,6 +346,15 @@ const styles = StyleSheet.create({
   modalTitle: { fontFamily: FONTS.black, fontSize: 18, color: C.text },
   modalClose: { fontFamily: FONTS.bold, fontSize: 20, color: C.sub },
   modalLabel: { fontFamily: FONTS.extraBold, fontSize: 12, color: C.light, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+
+  orderList:   { gap: 8 },
+  orderRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1.5, borderColor: C.bdr, backgroundColor: '#F9FAFB' },
+  orderRowSel: { borderColor: C.green, backgroundColor: C.greenLt },
+  orderRef:    { fontFamily: FONTS.bold, fontSize: 13, color: C.text },
+  orderMeta:   { fontFamily: FONTS.regular, fontSize: 11, color: C.sub, marginTop: 2 },
+  orderTick:   { fontFamily: FONTS.black, fontSize: 14, color: C.green },
+  noOrders:    { backgroundColor: C.amberLt, borderWidth: 1, borderColor: '#FDE68A', borderRadius: 12, padding: 12 },
+  noOrdersText:{ fontFamily: FONTS.semiBold, fontSize: 12, color: '#92400E', lineHeight: 18 },
 
   issueGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   issueChip: {

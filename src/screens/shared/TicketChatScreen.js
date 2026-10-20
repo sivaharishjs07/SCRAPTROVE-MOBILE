@@ -14,13 +14,16 @@ const C = {
   amber: '#D97706', amberLt: '#FFFBEB',
 };
 
+// Keyed by the stored issue_type (TICKET_ISSUE_TYPES on the worker). The
+// fallback below already renders the raw key, so tickets created before
+// this change still display sensibly.
 const ISSUE_LABELS = {
-  order_issue:   { en: 'Order Issue',       ta: 'ஆர்டர் பிரச்சனை' },
-  payment_issue: { en: 'Payment Issue',     ta: 'பணம் பிரச்சனை' },
-  dealer_issue:  { en: 'Pickup Team Behaviour', ta: 'எங்கள் குழு நடத்தை' },
-  app_problem:   { en: 'App Problem',       ta: 'ஆப் பிரச்சனை' },
-  account_issue: { en: 'Account Issue',     ta: 'கணக்கு பிரச்சனை' },
-  other:         { en: 'Other',             ta: 'மற்றவை' },
+  "Dealer didn't arrive":  { en: "Pickup team didn't arrive", ta: 'குழு வரவில்லை' },
+  'Wrong weight recorded': { en: 'Wrong weight recorded',     ta: 'எடை தவறாக பதிவு' },
+  'Payment issue':         { en: 'Payment issue',             ta: 'பணம் பிரச்சனை' },
+  'Rate dispute':          { en: 'Rate dispute',              ta: 'விலை தகராறு' },
+  'Damaged / lost items':  { en: 'Damaged / lost items',      ta: 'சேதம் / காணவில்லை' },
+  'Other':                 { en: 'Other',                     ta: 'மற்றவை' },
 };
 
 const issueLabel = (key, lang) =>

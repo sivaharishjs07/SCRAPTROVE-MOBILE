@@ -123,8 +123,14 @@ export const getDealerAnalytics = () =>
 export const getTickets = () =>
   api.get('/tickets');
 
-export const createTicket = (issue_type, message) =>
-  api.post('/tickets', { issue_type, message });
+// order_id is required — the worker rejects tickets that aren't raised
+// against one of the caller's own orders, and issue_type must be a value
+// from GET /api/tickets/issue-types (TICKET_ISSUE_TYPES on the worker).
+export const createTicket = (order_id, issue_type, message, attachments) =>
+  api.post('/tickets', { order_id, issue_type, message, attachments });
+
+export const getTicketIssueTypes = () =>
+  api.get('/tickets/issue-types');
 
 export const getTicket = (id) =>
   api.get(`/tickets/${id}`);
