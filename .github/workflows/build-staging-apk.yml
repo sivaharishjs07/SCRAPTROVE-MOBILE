@@ -68,6 +68,12 @@ jobs:
         # out the .apk download URL. --no-wait would exit immediately and
         # leave us with nothing to upload here.
         run: |
+          # Without pipefail the pipeline below takes tee's exit code, so a
+          # build that failed instantly (quota, auth, config) still showed
+          # as a green step and the failure surfaced one step later as an
+          # unrelated JSON parse error on an empty file. EAS writes its
+          # error text to stderr, which stays visible in this log.
+          set -o pipefail
           if [ -z "$EXPO_TOKEN" ]; then
             echo "::error::EXPO_TOKEN secret is missing. Add it at Repo > Settings > Secrets and variables > Actions."
             exit 1
