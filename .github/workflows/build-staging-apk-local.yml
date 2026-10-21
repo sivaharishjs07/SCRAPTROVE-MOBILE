@@ -1,0 +1,88 @@
+name: Build staging APK (on GitHub, no Expo build quota)
+
+# Same APK as "Build staging APK", but compiled on a GitHub runner with
+# `eas build --local` instead of on Expo's build servers. Use it when the
+# Expo free-plan monthly build allowance is used up ("This account has used
+# its Android builds from the Free plan this month").
+#
+# - Manual only. It never runs on push, so it will not eat GitHub minutes
+#   on every commit.
+# - It still reads the `preview` profile in eas.json, so the APK talks to
+#   https://api.stage.scraptrove.com, and it still fetches the signing
+#   keystore from Expo using EXPO_TOKEN.
+# - Expo says local builds do not count against the build allowance. Whether
+#   a GitHub runner counts as "local" is the one thing not confirmed - check
+#   expo.dev > Billing > Usage after the first run.
+# - Cost: GitHub Actions minutes (private repos get a monthly free amount).
+#   Expect roughly 15-25 minutes per build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS profile (preview = staging, production = live)'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+jobs:
+  build:
+    name: Local EAS build (${{ github.event.inputs.profile || 'preview' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Expo SDK 51 / React Native 0.74 build with JDK 17.
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build APK on this runner
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          CI: '1'
+        run: |
+          set -o pipefail
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is missing. Add it at Repo > Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          mkdir -p out
+          eas build \
+            --platform android \
+            --profile ${{ github.event.inputs.profile || 'preview' }} \
+            --local \
+            --non-interactive \
+            --output "$PWD/out/scraptrove-staging.apk"
+          ls -lh out/
+
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraptrove-staging-apk
+          path: out/scraptrove-staging.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Show download hint
+        run: |
+          echo "::notice title=APK ready::Download from the 'Artifacts' section at the bottom of this workflow run summary page."
