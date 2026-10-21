@@ -176,7 +176,7 @@ export default function DealerProfileScreen({ navigation }) {
               ? 'சென்னையில் செய்யப்பட்டது. டீலர்களுக்கு ஒரு வலுவான கூட்டாளி.'
               : 'Made in Chennai. Your trusted scrap pickup partner.'}
           </Text>
-          <Text style={styles.footerVersion}>v1.0.2</Text>
+          <Text style={styles.footerVersion}>v1.0.3</Text>
         </View>
 
       </ScrollView>

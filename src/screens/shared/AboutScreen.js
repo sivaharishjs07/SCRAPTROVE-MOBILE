@@ -47,7 +47,7 @@ export default function AboutScreen({ navigation }) {
               : 'Your trusted scrap pickup service'}
           </Text>
           <View style={styles.versionBadge}>
-            <Text style={styles.versionText}>v1.0.2</Text>
+            <Text style={styles.versionText}>v1.0.3</Text>
           </View>
         </View>
 
@@ -101,7 +101,7 @@ export default function AboutScreen({ navigation }) {
               <Text style={styles.infoTitle}>
                 {language === 'ta' ? 'பயன்பாட்டு பதிப்பு' : 'App Version'}
               </Text>
-              <Text style={styles.infoText}>v1.0.2</Text>
+              <Text style={styles.infoText}>v1.0.3</Text>
             </View>
           </View>
 

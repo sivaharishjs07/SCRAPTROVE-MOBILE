@@ -138,7 +138,7 @@ export default function SettingsScreen({ navigation }) {
               ? 'சென்னையில் செய்யப்பட்டது. விற்பனையாளர்களுக்கு எப்போதும் இலவசம்.'
               : 'Made in Chennai. Always free for sellers.'}
           </Text>
-          <Text style={styles.footerVersion}>v1.0.2</Text>
+          <Text style={styles.footerVersion}>v1.0.3</Text>
         </View>
 
       </ScrollView>
