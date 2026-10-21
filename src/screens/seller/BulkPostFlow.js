@@ -51,9 +51,10 @@ const C = {
 };
 
 // ─── Category tree — mirrors web BulkBookingFlow.BULK_CATS ────────────────
-// Electronics / E-Waste intentionally removed per pre-launch decision — we
-// hold no CPCB authorisation for it. Do not re-add it for parity with the
-// website's BulkBookingFlow, which still lists "Industrial E-Waste".
+// Electronic e-waste (computers, phones, circuit boards - anything that can
+// hold data) is deliberately NOT offered. E-waste appliances are accepted
+// (stored, recorded, passed on to registered recyclers) and are sold through
+// the product catalogue, not this tree.
 const BULK_CATS = [
   {
     key: 'metals', label: 'Metals', label_ta: 'உலோகங்கள்', icon: '🔩',

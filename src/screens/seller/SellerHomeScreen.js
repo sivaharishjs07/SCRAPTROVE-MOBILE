@@ -30,7 +30,7 @@ const STEPS = [
   {
     icon:    '📋',
     title:   'Tell us what you have',
-    desc:    'Pick scrap categories — newspaper, metal, e-waste, mixed',
+    desc:    'Pick scrap categories — newspaper, metal, appliances, mixed',
     title_ta:'உங்களிடம் உள்ளதை சொல்லுங்கள்',
     desc_ta: 'ஸ்கிராப் வகைகளை தேர்ந்தெடுங்கள் — செய்தித்தாள், உலோகம், மின்னணு, கலவை',
   },
