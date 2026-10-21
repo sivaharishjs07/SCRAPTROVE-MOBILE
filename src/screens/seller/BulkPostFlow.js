@@ -51,7 +51,9 @@ const C = {
 };
 
 // ─── Category tree — mirrors web BulkBookingFlow.BULK_CATS ────────────────
-// Electronics / E-Waste intentionally removed per pre-launch decision.
+// Electronics / E-Waste intentionally removed per pre-launch decision — we
+// hold no CPCB authorisation for it. Do not re-add it for parity with the
+// website's BulkBookingFlow, which still lists "Industrial E-Waste".
 const BULK_CATS = [
   {
     key: 'metals', label: 'Metals', label_ta: 'உலோகங்கள்', icon: '🔩',
@@ -99,7 +101,6 @@ const BULK_CATS = [
       { en: 'Industrial Copper / Brass Scrap',                 ta: 'தொழிற்சாலை செம்பு / பித்தளை' },
       { en: 'Industrial Plastic Waste',                        ta: 'தொழிற்சாலை பிளாஸ்டிக்' },
       { en: 'Industrial Paper / Cardboard Waste',              ta: 'தொழிற்சாலை காகிதம் / அட்டை' },
-      { en: 'Industrial E-Waste / Circuit Boards',             ta: 'தொழிற்சாலை மின்கழிவு / சர்க்யூட் போர்டு' },
       { en: 'Industrial Wire & Cable Scrap',                   ta: 'கம்பி / cable ஸ்கிராப்' },
       { en: 'Other (specify)',                                 ta: 'மற்றது' },
     ],
