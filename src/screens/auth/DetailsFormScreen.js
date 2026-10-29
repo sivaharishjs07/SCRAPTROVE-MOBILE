@@ -127,6 +127,10 @@ export default function DetailsFormScreen({ navigation, route }) {
   const [vehicles,      setVehicles]      = useState([]);
   const [address,       setAddress]       = useState('');
   const [pincode,       setPincode]       = useState('');
+  const [homeDoor,      setHomeDoor]      = useState('');
+  const [homeStreet,    setHomeStreet]    = useState('');
+  const [homeLandmark,  setHomeLandmark]  = useState('');
+  const [homePincode,   setHomePincode]   = useState('');
   const [gst,           setGst]           = useState('');
   const [pan,           setPan]           = useState('');
   const [shopPhotos,    setShopPhotos]    = useState([]); // 1–3 photos
@@ -231,6 +235,14 @@ export default function DetailsFormScreen({ navigation, route }) {
     if (!district)                                e.district = 'Required';
     if (!city)                                    e.city     = 'Please select your city';
     if (gmail.trim() && !EMAIL_REGEX.test(gmail)) e.gmail    = 'Enter a valid email address';
+    // Residential pickup address — same rules as the seller website / API.
+    if (!homeDoor.trim())                         e.homeDoor    = 'Please enter your door / house number';
+    else if (homeDoor.trim().length > 20)         e.homeDoor    = 'Door number is too long';
+    if (!homeStreet.trim())                       e.homeStreet  = 'Please enter the street name';
+    else if (homeStreet.trim().length > 100)      e.homeStreet  = 'Street name is too long';
+    if (homeLandmark.trim().length > 80)          e.homeLandmark = 'Landmark is too long';
+    if (!homePincode.trim())                      e.homePincode = 'Please enter your pincode';
+    else if (!/^\d{6}$/.test(homePincode.trim())) e.homePincode = 'Pincode must be exactly 6 digits';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -251,7 +263,9 @@ export default function DetailsFormScreen({ navigation, route }) {
     setLoading(true);
     try {
       const smallCityId = await getCityIdAsync(state, district, city);
-      const res = await sellerSetup({ name: name.trim(), state, district, city, city_id: smallCityId, gmail: gmail.trim(), seller_type: 'small' });
+      const res = await sellerSetup({ name: name.trim(), state, district, city, city_id: smallCityId, gmail: gmail.trim(), seller_type: 'small',
+        home_door_no: homeDoor.trim(), home_street: homeStreet.trim(),
+        home_landmark: homeLandmark.trim() || null, home_pincode: homePincode.trim() });
       // Use the real session token from setup response or temp token stored after OTP verify
       const sessionToken = res.data?.token || (await AsyncStorage.getItem('auth_token'));
       if (!sessionToken) throw new Error('Session token missing. Please try logging in again.');
@@ -274,8 +288,23 @@ export default function DetailsFormScreen({ navigation, route }) {
       };
       await login(userData, 'seller');
     } catch (err) {
-      const msg = err?.response?.data?.error || 'Registration failed. Please check your internet connection and try again.';
-      Alert.alert('Registration Failed', msg, [{ text: 'OK' }]);
+      // The server answers field problems as { errors: { field: message } }.
+      // Put each under its input instead of the generic "check your internet".
+      const fe = err?.response?.data?.errors;
+      if (fe && typeof fe === 'object') {
+        const map = { home_door_no: 'homeDoor', home_street: 'homeStreet', home_landmark: 'homeLandmark',
+                      home_pincode: 'homePincode', email: 'gmail' };
+        const next = {};
+        Object.keys(fe).forEach(k => { next[map[k] || k] = fe[k]; });
+        setErrors(next);
+        Alert.alert('Please check your details', Object.values(fe).join('
+'), [{ text: 'OK' }]);
+      } else {
+        const msg = err?.response?.data?.error
+          || (err?.response ? `Registration failed (${err.response.status}). Please try again.`
+                            : 'Registration failed. Please check your internet connection and try again.');
+        Alert.alert('Registration Failed', msg, [{ text: 'OK' }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -437,6 +466,27 @@ export default function DetailsFormScreen({ navigation, route }) {
               value={gmail} onChangeText={t => { setGmail(t); setErrors(e => ({...e, gmail: null})); }}
               placeholder="yourname@gmail.com" keyboardType="email-address"
               autoCapitalize="none" error={errors.gmail}
+            />
+
+            <FieldInput
+              label="Door / House No. *"
+              value={homeDoor} onChangeText={t => { setHomeDoor(t); setErrors(e => ({...e, homeDoor: null})); }}
+              placeholder="e.g. 12A" maxLength={20} error={errors.homeDoor}
+            />
+            <FieldInput
+              label="Street *"
+              value={homeStreet} onChangeText={t => { setHomeStreet(t); setErrors(e => ({...e, homeStreet: null})); }}
+              placeholder="e.g. Gandhi Street" maxLength={100} error={errors.homeStreet}
+            />
+            <FieldInput
+              label="Landmark (Optional)"
+              value={homeLandmark} onChangeText={t => { setHomeLandmark(t); setErrors(e => ({...e, homeLandmark: null})); }}
+              placeholder="e.g. Near the temple" maxLength={80} error={errors.homeLandmark}
+            />
+            <FieldInput
+              label="Pincode *"
+              value={homePincode} onChangeText={t => { setHomePincode(t.replace(/\D/g, '')); setErrors(e => ({...e, homePincode: null})); }}
+              placeholder="6-digit pincode" keyboardType="number-pad" maxLength={6} error={errors.homePincode}
             />
 
             <TouchableOpacity
