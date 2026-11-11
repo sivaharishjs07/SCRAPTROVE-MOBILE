@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   registerForPushNotifications,
   clearPushTokenCache,
+  clearDeviceNotifications,
   trackAppSession,
 } from '../services/notifications';
-import api from '../services/api';
+import api, { updateDealerStatus } from '../services/api';
 import {
   migrateLegacyTokens,
   getSessionToken,
@@ -16,6 +17,10 @@ import {
 } from '../services/authToken';
 
 const AppContext = createContext(null);
+
+// Rejects if `promise` has not settled within `ms`.
+const withTimeout = (promise, ms) =>
+  Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
 // ─── Default empty order draft ────────────────────────────────────────────────
 const EMPTY_DRAFT = {
@@ -52,6 +57,10 @@ export const AppProvider = ({ children }) => {
 
   // ── Saved address: pre-fills PostStep3 on subsequent orders ───────────────
   const [savedAddress, setSavedAddressState] = useState(null);
+
+  // Bumped on every login and logout. Async work that started under one
+  // session compares it before writing, so it cannot touch the next one.
+  const sessionGeneration = useRef(0);
 
   // Load persisted session + saved address on app start
   useEffect(() => {
@@ -111,6 +120,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const login = async (userData, type) => {
+    sessionGeneration.current += 1;
     // Token goes to SecureStore first so requests made right after login
     // are authenticated; the profile (without the token) goes to AsyncStorage.
     if (userData?.token) await setSessionToken(userData.token);
@@ -135,8 +145,12 @@ export const AppProvider = ({ children }) => {
   // Called on app foreground and after suspend-related actions so a mid-session
   // admin suspend / unsuspend is reflected without needing to sign in again.
   const refreshUser = async () => {
+    const generation = sessionGeneration.current;
     try {
       const res = await api.get('/auth/me');
+      // Logged out (or a different user logged in) while this was in flight:
+      // writing the result now would bring the old profile back.
+      if (generation !== sessionGeneration.current) return null;
       const data = res?.data;
       if (!data) return null;
       // Guard: if the auth token is valid but the profile row is missing on
@@ -186,18 +200,36 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Everything logout removes. Checklist: docs/LOGOUT_CHECKLIST.md
   const logout = async () => {
+    // Any profile refresh still in flight must not write back afterwards.
+    sessionGeneration.current += 1;
+
+    // 1. While the token is still valid: take a dealer offline on the server,
+    //    otherwise the backend keeps offering them pickups. The online flag is
+    //    not loaded from the server at start-up, so send it regardless of the
+    //    local toggle. Capped at 4s so a bad connection cannot stall logout.
+    if (userType === 'dealer') {
+      await withTimeout(updateDealerStatus(false), 4000).catch(() => {});
+    }
+
+    // 2. In-memory state, including personal data in the order draft.
     setUser(null);
     setUserType(null);
     setActiveOrder(null);
     setIsOnline(false);
-    // Clear push token cache on logout so the next login re-registers once
-    // (ensures correct user is associated if the device is shared)
+    setOrderDraftState(EMPTY_DRAFT);
+    setSavedAddressState(null);
+
+    // 3. Stored data. The push cache is cleared so the next login registers
+    //    this device for the new user. Tokens live in SecureStore.
     await clearPushTokenCache();
-    // The token used to be removed together with 'user'; now that it lives in
-    // SecureStore it must be cleared explicitly. (Full logout audit: task S3.)
     await clearAllTokens();
-    await AsyncStorage.multiRemove(['user', 'userType']);
+    await AsyncStorage.multiRemove(['user', 'userType', 'savedAddress']).catch(() => {});
+
+    // 4. Device side of push (no backend unregister endpoint exists):
+    //    best-effort and not awaited, so logout is never held up by it.
+    clearDeviceNotifications().catch(() => {});
   };
 
   // ── Order draft helpers ────────────────────────────────────────────────────

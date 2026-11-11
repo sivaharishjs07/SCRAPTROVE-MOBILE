@@ -16,6 +16,11 @@ import { registerPushToken, trackSession } from './api';
 
 const TOKEN_CACHE_KEY = 'push_token_registered';
 
+// Bumped on every logout (clearPushTokenCache). See registerForPushNotifications.
+let pushGeneration = 0;
+// Set while clearDeviceNotifications() is deleting the device token.
+let pendingUnregister = null;
+
 // Configure how notifications are displayed when the app is foregrounded
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -45,7 +50,16 @@ export function getDeviceModel() {
  * is already cached and unchanged.
  */
 export async function registerForPushNotifications() {
+  // Snapshot of the logout generation. If a logout happens while this call
+  // is in flight, its result belongs to the previous user and must not be
+  // cached (a stale cache entry would make the next user's login skip
+  // registering this device).
+  const generation = pushGeneration;
   try {
+    // A logout may still be deleting the device token; finish that first so
+    // it cannot delete the token this call is about to fetch.
+    if (pendingUnregister) await pendingUnregister.catch(() => {});
+
     // NOTE: Device.isDevice check intentionally removed.
     // It can incorrectly return false on some real Android devices (rooted, unusual OEMs),
     // which would silently block push registration even when the user granted permission.
@@ -81,10 +95,12 @@ export async function registerForPushNotifications() {
     const deviceModel = getDeviceModel();
 
     // ── Only call the backend when the token is genuinely new or changed ──────
+    if (generation !== pushGeneration) return null; // logged out meanwhile
     const cached = await AsyncStorage.getItem(TOKEN_CACHE_KEY).catch(() => null);
     if (cached !== token) {
       try {
         await registerPushToken(token, deviceModel);
+        if (generation !== pushGeneration) return null; // logged out meanwhile
         // Cache only after a successful backend call
         await AsyncStorage.setItem(TOKEN_CACHE_KEY, token).catch(() => {});
         console.log('[Push] Token registered successfully');
@@ -110,7 +126,27 @@ export async function registerForPushNotifications() {
  * ensuring the correct user is associated (handles device-sharing edge case).
  */
 export function clearPushTokenCache() {
+  pushGeneration += 1;
   return AsyncStorage.removeItem(TOKEN_CACHE_KEY).catch(() => {});
+}
+
+/**
+ * Logout, device side. There is no backend endpoint to unregister a push
+ * token, so the server still maps this device's Expo token to the old
+ * account. The Expo token is tied to the app installation, not the user, so
+ * the best the app can do alone is:
+ *   - remove the old account's notifications from the tray and badge
+ *   - delete the device's FCM token, so the Expo token cannot deliver
+ *     anything until the next login calls getExpoPushTokenAsync() again
+ * Best-effort: never throws.
+ */
+export function clearDeviceNotifications() {
+  pendingUnregister = (async () => {
+    await Notifications.dismissAllNotificationsAsync().catch(() => {});
+    await Notifications.setBadgeCountAsync(0).catch(() => {});
+    await Notifications.unregisterForNotificationsAsync().catch(() => {});
+  })().finally(() => { pendingUnregister = null; });
+  return pendingUnregister;
 }
 
 /**
