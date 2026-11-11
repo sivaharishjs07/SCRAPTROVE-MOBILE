@@ -196,7 +196,7 @@ export default function DetailsFormScreen({ navigation, route }) {
           onPress: async () => {
             if (!(await ensurePermission('photos', language))) return;
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ["images"],
               allowsEditing: true, aspect: [4, 3], quality: 0.85,
             });
             if (!result.canceled) {

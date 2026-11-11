@@ -86,7 +86,7 @@ export default function PostStep4Screen({ navigation }) {
     setPickerOpen(false);
     if (!(await ensurePermission('photos', language))) return;
     const r = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: false,   // No crop screen
       quality: 0.85,
     });
