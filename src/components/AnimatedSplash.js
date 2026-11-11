@@ -4,8 +4,10 @@ import {
 } from 'react-native';
 
 // Two-stage splash:
-//   1. Native splash (splash.png) shows instantly at cold launch and stays
-//      up until App.js calls SplashScreen.hideAsync() — no white flash.
+//   1. Native splash (Android 12+ style: the scrapx-symbol-tight.png logo
+//      centred on white, configured in the expo-splash-screen plugin in
+//      app.json) shows instantly at cold launch and stays up until App.js
+//      calls SplashScreen.hideAsync() — no white flash.
 //   2. This component then renders on top of the app content and plays a
 //      short, snappy animation. When done it calls onFinish() which lets
 //      the parent unmount this overlay and show the actual first screen.
