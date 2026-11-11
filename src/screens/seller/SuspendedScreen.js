@@ -7,6 +7,7 @@ import { useApp } from '../../context/AppContext';
 import { getLatestEditRequest } from '../../services/api';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
+import { SUPPORT_PHONE, SUPPORT_EMAIL } from '../../constants/contact';
 
 const RED_50   = '#FEF2F2';
 const RED_100  = '#FECACA';
@@ -25,8 +26,6 @@ const GRAY_400 = '#9CA3AF';
 const GRAY_500 = '#6B7280';
 const GRAY_800 = '#1F2937';
 
-const SUPPORT_PHONE   = '+917603807955';
-const SUPPORT_EMAIL   = 'support@scraptrove.com';
 const SUPPORT_WA_TEXT = 'Hi Scrap Trove, my account is suspended and I need help. Reg ID: ';
 
 const fmtDT = (dt) => {

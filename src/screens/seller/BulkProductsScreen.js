@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
+import { SUPPORT_WHATSAPP } from '../../constants/contact';
 
 const C = {
   bg:      '#F9FAFB',
@@ -92,7 +93,7 @@ const CATEGORIES = [
   },
 ];
 
-const WHATSAPP_NUMBER = '917603807955';
+const WHATSAPP_NUMBER = SUPPORT_WHATSAPP;
 
 export default function BulkProductsScreen({ navigation }) {
   const { language } = useApp();

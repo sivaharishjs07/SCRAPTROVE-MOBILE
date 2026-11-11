@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
+import { supportWhatsAppUrl } from '../../constants/contact';
 
 // ─── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -107,7 +108,7 @@ export default function DealerPendingScreen({ navigation }) {
         {/* WhatsApp support */}
         <TouchableOpacity
           style={styles.whatsappBtn}
-          onPress={() => Linking.openURL('https://wa.me/919999999999?text=Hi%2C%20I%20applied%20as%20a%20dealer%20on%20Scrap%20Trove')}
+          onPress={() => Linking.openURL(supportWhatsAppUrl('Hi, I applied as a dealer on Scrap Trove')).catch(() => {})}
           activeOpacity={0.85}
         >
           <Text style={styles.whatsappBtnText}>

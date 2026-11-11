@@ -99,7 +99,16 @@ export default function ActiveOrderScreen({ navigation, route }) {
     );
   }
 
-  const seller = order.seller || { name: 'Seller', phone: '9999999999' };
+  // No placeholder number: dialling a made-up number could ring a stranger.
+  const seller = order.seller || { name: 'Seller', phone: null };
+  const callSeller = () => {
+    if (!seller.phone) {
+      // TODO(client): Tamil text.
+      Alert.alert(t('error', language), "The seller's phone number is not available for this order.");
+      return;
+    }
+    Linking.openURL(`tel:${seller.phone}`).catch(() => {});
+  };
 
   return (
     <View style={styles.container}>
@@ -109,7 +118,7 @@ export default function ActiveOrderScreen({ navigation, route }) {
         <Text style={styles.navTitle}>{t('active_order_title', language)}</Text>
         <TouchableOpacity
           style={styles.callSellerBtn}
-          onPress={() => Linking.openURL(`tel:${seller.phone}`)}
+          onPress={callSeller}
         >
           <Text style={styles.callSellerText}>📞 {t('call_seller', language)}</Text>
         </TouchableOpacity>

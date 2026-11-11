@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider } from './src/context/AppContext';
 import AppNavigator from './src/navigation';
 import AnimatedSplash from './src/components/AnimatedSplash';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { COLORS } from './src/constants/colors';
 
 // Keep the native splash on screen until the JS side is ready to take over
@@ -70,9 +71,12 @@ export default function App() {
       <View style={{ flex: 1 }} onLayout={onRootLayout}>
         {/* Status bar visible — dark icons for white screens, overridden per-screen where needed */}
         <StatusBar style="dark" backgroundColor="transparent" translucent />
-        <AppProvider>
-          <AppNavigator />
-        </AppProvider>
+        {/* Any render error in the app shows a friendly screen instead of a blank one */}
+        <ErrorBoundary>
+          <AppProvider>
+            <AppNavigator />
+          </AppProvider>
+        </ErrorBoundary>
         {/* Animated splash overlay renders on top until it fades itself out */}
         {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
       </View>

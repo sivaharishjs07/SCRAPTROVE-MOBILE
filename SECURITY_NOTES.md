@@ -21,6 +21,15 @@ Related documents:
 - Expo SDK 51, React Native 0.74.5, JavaScript engine Hermes (Expo
   default; no `jsEngine` override in `app.json`). Android only; the `ios`
   block in `app.json` is not built or tested.
+- Release builds: Hermes bytecode, minified JavaScript, and R8 code
+  minification plus resource shrinking for the Android code
+  (`expo-build-properties`). No debug-only code, test numbers or staging
+  addresses in the production bundle (checked by building it and searching
+  it). R8 can remove classes a library loads by reflection: every release
+  build must be smoke-tested on a device before upload.
+- Crashes while rendering show a "Something went wrong" screen with Try
+  again / Restart app (`src/components/ErrorBoundary.js`). There is no
+  crash-reporting service; adding one is a client decision (Data safety).
 - **SDK 51 targets Android API 34. Google Play requires API 36 for new
   apps and updates since 31 Aug 2026**, so the app cannot be published
   until the SDK upgrade (task P2, plan: SDK 54) is done.

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { getYardProducts, submitYardEnquiry } from '../../services/api';
 import { FONTS } from '../../constants/typography';
+import { SUPPORT_WHATSAPP } from '../../constants/contact';
 
 // Design tokens — same palette used across seller screens.
 const C = {
@@ -23,7 +24,7 @@ const C = {
   waHover:  '#1EBE57',
 };
 
-const WHATSAPP_NUMBER = '917603807955';
+const WHATSAPP_NUMBER = SUPPORT_WHATSAPP;
 const CATEGORIES = [
   'All', 'Iron Sheets', 'Gates & Grills', 'Rods & Angles',
   'Racks & Furniture', 'Equipment', 'Other',

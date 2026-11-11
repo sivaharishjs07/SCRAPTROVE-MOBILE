@@ -192,13 +192,6 @@ const styles = StyleSheet.create({
   title: { fontFamily: FONTS.extraBold, fontSize: 26, color: COLORS.text, marginBottom: 8 },
   subtitle: { fontFamily: FONTS.regular, fontSize: 15, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 36 },
   phoneHighlight: { color: COLORS.primary, fontFamily: FONTS.bold },
-  testHint: {
-    backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1,
-    borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14,
-    marginTop: 8, marginBottom: 8,
-  },
-  testHintText: { fontFamily: FONTS.regular, fontSize: 13, color: '#92400E', textAlign: 'center' },
-  testHintOtp:  { fontFamily: FONTS.black, fontSize: 15, color: '#92400E' },
   otpRow: { flexDirection: 'row', gap: 10, marginBottom: 32 },
   otpBox: {
     width: 48, height: 58, borderRadius: 14, borderWidth: 2,
