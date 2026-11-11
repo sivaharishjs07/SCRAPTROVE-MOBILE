@@ -165,6 +165,41 @@ the number `0` or `1` (not `true` or `"1"`).
 
 ---
 
+## F. Photo uploads (`POST /upload`)
+
+The app sends each photo as `{ data: <base64>, type: 'image/jpeg' }` and
+gets back a Cloudinary URL that it later puts into orders, dealer
+registration and order completion. The app does not shrink photos today,
+so one request can carry a full-resolution camera image (several MB, about
+a third more as base64).
+
+### F1. Size and type
+- Reject bodies over a fixed limit with **413** and a clear `error` text
+  (please tell us the limit so the app can match it).
+- Check the decoded bytes are really an image (JPEG/PNG/WebP magic bytes),
+  not just the `type` field the client sends.
+
+### F2. Who may upload
+- Only logged-in users (session or sign-up token). Rate limit per user so
+  the endpoint cannot be used as free image hosting.
+- Upload into a fixed Cloudinary folder with a restricted upload preset;
+  the client must not be able to choose the folder, public ID or
+  transformations.
+
+### F3. Photo metadata and visibility
+- Strip EXIF metadata on upload (camera photos can carry the GPS position
+  of the seller's home and the phone model).
+- Cloudinary URLs are public to anyone who has them. Confirm that is
+  acceptable for order and dealer-registration photos, or switch those to
+  authenticated/private delivery.
+
+### F4. URLs coming back from the client
+`photo_urls` (orders), `shop_photo` / `vehicle_photos` (dealer
+registration) and `completion_photo` (order completion) should only be
+accepted if they point to our own Cloudinary account and folder.
+
+---
+
 ## Coming next (not yet reviewed)
 
 Google Play requires in-app account deletion. The app has no delete
