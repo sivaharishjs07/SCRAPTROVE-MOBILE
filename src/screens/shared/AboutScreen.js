@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
+import { APP_VERSION, APP_VERSION_FULL } from '../../constants/appVersion';
 import { COLORS } from '../../constants/colors';
 import { API_BASE } from '../../services/api';
 
@@ -47,7 +48,7 @@ export default function AboutScreen({ navigation }) {
               : 'Your trusted scrap pickup service'}
           </Text>
           <View style={styles.versionBadge}>
-            <Text style={styles.versionText}>v1.0.3</Text>
+            <Text style={styles.versionText}>{APP_VERSION}</Text>
           </View>
         </View>
 
@@ -101,7 +102,7 @@ export default function AboutScreen({ navigation }) {
               <Text style={styles.infoTitle}>
                 {language === 'ta' ? 'பயன்பாட்டு பதிப்பு' : 'App Version'}
               </Text>
-              <Text style={styles.infoText}>v1.0.3</Text>
+              <Text style={styles.infoText}>{APP_VERSION_FULL}</Text>
             </View>
           </View>
 

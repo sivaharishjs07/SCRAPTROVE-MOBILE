@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
+import { APP_VERSION } from '../../constants/appVersion';
 import { COLORS } from '../../constants/colors';
 
 const C = {
@@ -176,7 +177,7 @@ export default function DealerProfileScreen({ navigation }) {
               ? 'சென்னையில் செய்யப்பட்டது. டீலர்களுக்கு ஒரு வலுவான கூட்டாளி.'
               : 'Made in Chennai. Your trusted scrap pickup partner.'}
           </Text>
-          <Text style={styles.footerVersion}>v1.0.3</Text>
+          <Text style={styles.footerVersion}>{APP_VERSION}</Text>
         </View>
 
       </ScrollView>
