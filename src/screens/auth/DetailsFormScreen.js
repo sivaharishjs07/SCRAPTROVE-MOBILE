@@ -297,8 +297,7 @@ export default function DetailsFormScreen({ navigation, route }) {
         const next = {};
         Object.keys(fe).forEach(k => { next[map[k] || k] = fe[k]; });
         setErrors(next);
-        Alert.alert('Please check your details', Object.values(fe).join('
-'), [{ text: 'OK' }]);
+        Alert.alert('Please check your details', Object.values(fe).join('\n'), [{ text: 'OK' }]);
       } else {
         const msg = err?.response?.data?.error
           || (err?.response ? `Registration failed (${err.response.status}). Please try again.`
