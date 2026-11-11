@@ -9,47 +9,48 @@ App ID: `com.scraptrove.app`
 ## Prerequisites
 
 - Node 20+
-- Java 17 (for local Android builds)
-- Android Studio SDK / Android emulator (or a physical device)
-- [Expo CLI](https://docs.expo.dev/get-started/installation/) via `npx expo`
-- A running API — point at the staging worker URL (see [scraptrove-api](https://github.com/vishaldurai-IND/scraptrove-api))
+- Java 17 and the Android SDK (only for building on your own machine)
+- An Android phone or emulator
+- A running API: the staging server `https://api.stage.scraptrove.com` (see [scraptrove-api](https://github.com/vishaldurai-IND/scraptrove-api))
 
 ---
 
 ## First-time setup
 
 ```bash
-npm install
+npm ci
 
-# Copy env — the app reads EXPO_PUBLIC_API_URL at runtime
-cp .env.example .env
-# Edit .env → set EXPO_PUBLIC_API_URL to the staging worker
+# The app reads EXPO_PUBLIC_API_URL from .env.local (git-ignored)
+cp .env.example .env.local
 ```
 
-The **`google-services.json`** Firebase config file has been intentionally kept out of this review repo. Get it from the owner (via password manager) and place at the repo root before building. Without it, FCM push notifications won't work but the app boots fine.
+`google-services.json` (Firebase client config for push notifications) is committed at the repo root and is needed for every build. It is not a secret; see `SECURITY_NOTES.md` section 2.
 
 ---
 
 ## Local development
 
-Run against the Expo Go app on your phone (fastest):
-
 ```bash
 npx expo start
-# → scan QR with Expo Go, or press 'a' for Android emulator
 ```
+
+The app uses native modules, so it runs in a build of this app rather than in the Expo Go app from the Play Store (which only supports the newest Expo SDK). Install a preview build (below) or build locally with `npx expo run:android`.
+
+Note: the `development` profile in `eas.json` sets `developmentClient: true`, but `expo-dev-client` is not installed, so that profile does not produce a working development client yet.
 
 ---
 
-## Build a real APK
+## Builds
 
-```bash
-# Local build — needs Java 17 + Android SDK
-npx eas build --local --platform android --profile preview
+| Profile | Output | Server |
+|---|---|---|
+| `preview` | APK to install on phones | staging |
+| `production` | AAB for Google Play (versionCode auto-incremented by EAS) | live |
 
-# Or trigger via the GitHub Actions workflow (build-android.yml) in the
-# original repo — kept there until this repo has its own CI.
-```
+- GitHub: Actions > "Build staging APK" (EAS cloud) or "Build staging APK (on GitHub, no Expo build quota)", choose the profile. Needs the `EXPO_TOKEN` repository secret.
+- Locally: `npx eas build --local --platform android --profile preview`
+
+OTA updates are enabled. Before publishing one, read `SECURITY_NOTES.md` section 9: when native code changes, `version` in `app.json` must be raised and a new build shipped.
 
 ---
 
@@ -57,30 +58,31 @@ npx eas build --local --platform android --profile preview
 
 ```
 scraptrove-mobile/
-├── App.js               — root component
-├── index.js             — entry
-├── app.json             — Expo config (name, icon, splash, permissions)
-├── eas.json             — EAS build profiles
-├── babel.config.js
-├── assets/              — icons, splash, fonts
-├── plugins/             — custom Expo config plugins (splash overrides)
+├── App.js               root component
+├── index.js             entry
+├── app.json             Expo config (name, version, permissions, OTA)
+├── eas.json             EAS build profiles
+├── assets/              icons, splash
+├── plugins/             withAndroidImmersive.js (not registered in app.json, currently unused)
+├── docs/                security and launch documents (see SECURITY_NOTES.md)
 └── src/
-    ├── context/         — AppContext (session + language + orderDraft + savedAddress)
-    ├── navigation/      — React Navigation tab + stack setup
-    ├── services/        — API client
-    ├── constants/       — colors + typography
-    ├── components/      — shared UI
+    ├── context/         AppContext (session, language, order draft, saved address)
+    ├── navigation/      React Navigation tabs + stacks, role-based screen sets
+    ├── services/        api (axios client), authToken (SecureStore), notifications,
+    │                    photoUpload, geocode
+    ├── constants/       colours, typography, translations, locations, mapConfig, appVersion
+    ├── components/      shared UI
     └── screens/
-        ├── auth/        — Login, OTP, DetailsForm, BulkDetails
-        ├── seller/      — Home, PostStep1-4, BulkPostFlow, BulkProducts, History, Profile
-        ├── dealer/      — Home, ActiveOrder, Profile
-        └── shared/      — MyDetails, YardFinds, AddressForm, Settings
+        ├── auth/        Welcome, UserType, Phone, OTP, DetailsForm, BulkDetails, DealerPending
+        ├── seller/      Home, PostStep1-4, BulkPostFlow, BulkProducts, History, OrderStatus,
+        │                RateDealer, Suspended, EditDetails
+        ├── dealer/      Home, IncomingOrder, ActiveOrder, Earnings, Profile, Subscription
+        └── shared/      Settings, MyDetails, AddressForm, YardFinds, ScrapRates, Support,
+                         TicketChat, FAQ, Language, About
 ```
 
 ---
 
-## What to review first
+## Security
 
-Read `SECURITY_NOTES.md` for the auth model, permissions, and known trade-offs.
-
-Suggested review priorities are in `SECURITY_NOTES.md` §9.
+Read `SECURITY_NOTES.md` first: how login and tokens work, what is stored on the phone, permissions, OTA rules and open issues. What the backend must enforce is in `docs/BACKEND_SECURITY_CHECKLIST.md`.
