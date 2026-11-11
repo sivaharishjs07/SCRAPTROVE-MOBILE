@@ -12,6 +12,7 @@ Related documents:
 | `docs/BACKEND_SECURITY_CHECKLIST.md` | What the backend must enforce (ownership, roles, sessions, uploads) |
 | `docs/LOGOUT_CHECKLIST.md` | Everything logout clears, and a manual test |
 | `docs/MAPS_MIGRATION_PLAN.md` | Moving maps and geocoding from OpenStreetMap to Google before launch |
+| `docs/DATA_SAFETY_WORKSHEET.md` | What data the app collects, where it goes, for the Play Data safety form |
 | `PLAYSTORE_READINESS_TASKS.md` | The review and Play Store task list |
 
 ---
