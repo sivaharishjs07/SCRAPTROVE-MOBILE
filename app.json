@@ -2,7 +2,7 @@
   "expo": {
     "name": "Scrap Trove",
     "slug": "scrapx",
-    "owner": "vishaldurai-ind",
+    "owner": "sivaharishjs07",
     "version": "1.1.0",
     "newArchEnabled": false,
     "orientation": "portrait",
@@ -12,7 +12,6 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/a7dd435f-e2e4-4ad2-809b-0ccb19ff3e3d",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
@@ -84,7 +83,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a7dd435f-e2e4-4ad2-809b-0ccb19ff3e3d"
+        "projectId": ""
       }
     }
   }
