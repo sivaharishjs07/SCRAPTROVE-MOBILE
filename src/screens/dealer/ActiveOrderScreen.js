@@ -9,7 +9,10 @@ import { useApp } from '../../context/AppContext';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
-import { updateOrderStatus, completeOrder, uploadPhoto } from '../../services/api';
+import { updateOrderStatus, completeOrder } from '../../services/api';
+import { uploadPhotoAsset, uploadErrorMessage, deleteLocalPhotos } from '../../services/photoUpload';
+
+// TODO(client): Tamil text for the messages below that are English-only.
 
 const STEPS = ['accepted', 'on_way', 'arrived', 'completed'];
 
@@ -22,34 +25,28 @@ export default function ActiveOrderScreen({ navigation, route }) {
   const [amountPaid, setAmountPaid] = useState('');
   const [completing, setCompleting] = useState(false);
 
+  // Only move to the next step once the server has accepted it; otherwise
+  // the screen and the server (and the seller's tracking) disagree.
   const advanceStep = async () => {
     const newStep = step + 1;
     const status  = STEPS[newStep];
-    try { await updateOrderStatus(order.id, status); } catch { }
-    setStep(newStep);
-  };
-
-  // ── Photo URI → base64 → Cloudinary → URL ──
-  const uploadPhotoUri = async (uri) => {
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      const res = await uploadPhoto(base64, 'image/jpeg');
-      return res?.data?.url || null;
-    } catch { return null; }
+      await updateOrderStatus(order.id, status);
+      setStep(newStep);
+    } catch (err) {
+      Alert.alert(t('error', language), err?.response?.data?.error || 'Could not update the order status. Please try again.');
+    }
   };
 
   const pickCompletionPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') return;
+    if (status !== 'granted') {
+      Alert.alert(t('error', language), 'Allow camera access for Scrap Trove in your phone Settings to take the completion photo.');
+      return;
+    }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
-    if (!result.canceled) setCompletionPhoto(result.assets[0].uri);
+    // Keep the whole asset (uri + size) so the upload can be resized.
+    if (!result.canceled) setCompletionPhoto(result.assets[0]);
   };
 
   const handleComplete = async () => {
@@ -67,11 +64,24 @@ export default function ActiveOrderScreen({ navigation, route }) {
       return;
     }
     setCompleting(true);
+    // Photo first: without it the order must not be marked complete.
+    let photoUrl;
     try {
-      // Upload completion photo to Cloudinary first
-      const photoUrl = await uploadPhotoUri(completionPhoto);
+      photoUrl = await uploadPhotoAsset(completionPhoto);
+    } catch (err) {
+      setCompleting(false);
+      Alert.alert(t('error', language), uploadErrorMessage(err, 'The photo could not be uploaded. Please check your connection and try again.'));
+      return;
+    }
+    // Only show success once the server has recorded the completion.
+    try {
       await completeOrder(order.id, photoUrl, amt);
-    } catch { }
+    } catch (err) {
+      setCompleting(false);
+      Alert.alert(t('error', language), err?.response?.data?.error || 'Could not complete the order. Please try again.');
+      return;
+    }
+    deleteLocalPhotos([completionPhoto]);
     setActiveOrder(null);
     setCompleting(false);
     setStep(3);
@@ -182,7 +192,7 @@ export default function ActiveOrderScreen({ navigation, route }) {
               onPress={pickCompletionPhoto}
             >
               {completionPhoto ? (
-                <Image source={{ uri: completionPhoto }} style={styles.completionPhoto} />
+                <Image source={{ uri: completionPhoto.uri }} style={styles.completionPhoto} />
               ) : (
                 <Text style={styles.photoBoxText}>
                   📸 {language === 'ta' ? 'புகைப்படம் எடுக்கவும்' : 'Take completion photo'}

@@ -137,6 +137,7 @@ export default function MyDetailsScreen({ navigation }) {
               placeholderTextColor={COLORS.textLight}
               keyboardType="email-address"
               autoCapitalize="none"
+              maxLength={254}
               autoCorrect={false}
               autoFocus
             />

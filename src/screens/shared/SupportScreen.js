@@ -330,6 +330,7 @@ export default function SupportScreen({ navigation, route }) {
               <TextInput
                 style={styles.msgInput}
                 multiline
+                maxLength={500}
                 numberOfLines={5}
                 placeholder={
                   language === 'ta'

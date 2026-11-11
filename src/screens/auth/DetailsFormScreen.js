@@ -6,14 +6,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { getPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { useLocations, statesList, districts, cities, getCityIdAsync } from '../../constants/locations';
 import { VEHICLES } from '../../constants/vehicles';
 import { PickerModal, PickerBtn } from '../../components/LocationPickerModal';
-import { sellerSetup, dealerRegister, uploadPhoto } from '../../services/api';
+import { sellerSetup, dealerRegister } from '../../services/api';
+import { uploadPhotoAssets, uploadErrorMessage, deleteLocalPhotos } from '../../services/photoUpload';
 
 // ─── Design tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -247,17 +247,6 @@ export default function DetailsFormScreen({ navigation, route }) {
     return Object.keys(e).length === 0;
   };
 
-  // ── Helper: convert photo URI → base64 via expo-file-system, upload to Cloudinary ──
-  const uploadPhotoUri = async (uri) => {
-    try {
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const res = await uploadPhoto(base64, 'image/jpeg');
-      return res?.data?.url || null;
-    } catch { return null; }
-  };
-
   const submitSeller = async () => {
     if (!validateSeller()) return;
     setLoading(true);
@@ -347,10 +336,20 @@ export default function DetailsFormScreen({ navigation, route }) {
   const submitDealer = async () => {
     if (!validateStep2()) return;
     setLoading(true);
+    // Photos first, one at a time (resized). A failed upload stops here with
+    // its own message and keeps the sign-up token, so the dealer can retry;
+    // previously failures were dropped and the dealer registered without them.
+    let shopUrls = [];
+    let vehicleUrls = [];
     try {
-      // Upload shop photos to Cloudinary, collect URLs
-      const shopUrls    = (await Promise.all(shopPhotos.map(p => uploadPhotoUri(p.uri)))).filter(Boolean);
-      const vehicleUrls = (await Promise.all(vehiclePhotos.map(p => uploadPhotoUri(p.uri)))).filter(Boolean);
+      shopUrls    = await uploadPhotoAssets(shopPhotos);
+      vehicleUrls = await uploadPhotoAssets(vehiclePhotos);
+    } catch (uploadErr) {
+      setLoading(false);
+      Alert.alert('Photo upload failed', uploadErrorMessage(uploadErr, 'Please check your internet connection and try again.'), [{ text: 'OK' }]);
+      return;
+    }
+    try {
 
       const dealerCityId = await getCityIdAsync(state, district, city);
       const payload = {
@@ -392,6 +391,7 @@ export default function DetailsFormScreen({ navigation, route }) {
         totalPickups:     0,
         avgRating:        0,
       };
+      deleteLocalPhotos([...shopPhotos, ...vehiclePhotos]);
       await login(userData, 'dealer_pending');
       navigation.reset({ index: 0, routes: [{ name: 'DealerPending' }] });
     } catch (err) {

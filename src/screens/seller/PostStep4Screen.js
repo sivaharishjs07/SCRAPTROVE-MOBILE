@@ -8,10 +8,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
-import { postScrapRequest, uploadPhoto, joinPincodeWaitlist } from '../../services/api';
+import { postScrapRequest, joinPincodeWaitlist } from '../../services/api';
+import { uploadPhotoAssets, uploadErrorMessage, deleteLocalPhotos } from '../../services/photoUpload';
 
 const C = {
   bg:      '#FFFFFF',
@@ -106,20 +106,6 @@ export default function PostStep4Screen({ navigation }) {
     }
   };
 
-  // Upload helper — expo-file-system + worker /api/upload (Cloudinary).
-  // Returns the URL on success; throws (with context) on failure so
-  // handleSubmit can surface a real error to the user rather than silently
-  // dropping photos and creating an order the admin can't view.
-  const uploadPhotoUri = async (uri) => {
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    const res = await uploadPhoto(base64, 'image/jpeg');
-    const url = res?.data?.url;
-    if (!url) throw new Error('Upload returned no URL');
-    return url;
-  };
-
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (photos.length < 1) {
@@ -129,19 +115,16 @@ export default function PostStep4Screen({ navigation }) {
     setLoading(true);
     let photoUrls = [];
     try {
-      // Uploads happen sequentially so a single failure aborts the batch
-      // before we send an incomplete order to the server.
-      for (const p of photos) {
-        // eslint-disable-next-line no-await-in-loop
-        photoUrls.push(await uploadPhotoUri(p.uri));
-      }
+      // Resized and uploaded one at a time; a single failure aborts the
+      // batch before we send an incomplete order to the server.
+      photoUrls = await uploadPhotoAssets(photos);
     } catch (uploadErr) {
       setLoading(false);
       Alert.alert(
         language === 'ta' ? 'படம் பதிவேற்ற முடியவில்லை' : 'Photo upload failed',
-        language === 'ta'
+        uploadErrorMessage(uploadErr, language === 'ta'
           ? 'உங்கள் இணைய இணைப்பை சரிபார்த்து மீண்டும் முயற்சிக்கவும்.'
-          : 'Please check your internet connection and try again.',
+          : 'Please check your internet connection and try again.'),
       );
       return;
     }
@@ -192,7 +175,9 @@ export default function PostStep4Screen({ navigation }) {
       // Also keep legacy savedAddress on user profile
       if (address) updateUser({ savedAddress: address }).catch(() => {});
 
-      // Clear draft so next order starts fresh
+      // Clear draft so next order starts fresh, and remove the local copies
+      // of the photos now that they are uploaded.
+      deleteLocalPhotos(photos);
       clearOrderDraft();
 
       setActiveOrder(backendOrder);

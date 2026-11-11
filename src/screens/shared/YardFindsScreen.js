@@ -109,6 +109,7 @@ export default function YardFindsScreen({ navigation }) {
           style={styles.searchInput}
           autoCorrect={false}
           autoCapitalize="none"
+          maxLength={50}
         />
       </View>
 

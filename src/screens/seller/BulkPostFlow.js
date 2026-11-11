@@ -19,9 +19,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { useApp } from '../../context/AppContext';
-import { postScrapRequest, uploadPhoto } from '../../services/api';
+import { postScrapRequest } from '../../services/api';
+import { uploadPhotoAssets, uploadErrorMessage, deleteLocalPhotos } from '../../services/photoUpload';
 import { FONTS } from '../../constants/typography';
 
 // ─── Design tokens ────────────────────────────────────────────────────────
@@ -146,12 +146,20 @@ export default function BulkPostFlow({ navigation }) {
     const { status } = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return Alert.alert(isTa ? 'அனுமதி தேவை' : 'Permission needed');
+    // TODO(client): Tamil text for the explanation line.
+    if (status !== 'granted') {
+      return Alert.alert(
+        isTa ? 'அனுமதி தேவை' : 'Permission needed',
+        isTa ? undefined : `Allow ${fromCamera ? 'camera' : 'photo'} access for Scrap Trove in your phone Settings to add photos.`,
+      );
+    }
     const res = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: false });
     if (!res.canceled && res.assets?.[0]?.uri) {
-      setPhotos(prev => [...prev, { uri: res.assets[0].uri }]);
+      // Keep width/height so the upload can be resized without re-reading the file.
+      const a = res.assets[0];
+      setPhotos(prev => [...prev, { uri: a.uri, width: a.width, height: a.height }]);
     }
   };
 
@@ -162,18 +170,13 @@ export default function BulkPostFlow({ navigation }) {
     setLoading(true);
     let photoUrls = [];
     try {
-      for (const p of photos) {
-        const b64 = await FileSystem.readAsStringAsync(p.uri, { encoding: FileSystem.EncodingType.Base64 });
-        const r   = await uploadPhoto(b64, 'image/jpeg');
-        const u   = r?.data?.url;
-        if (!u) throw new Error('Photo upload failed');
-        photoUrls.push(u);
-      }
-    } catch {
+      // Resized and uploaded one at a time; stops at the first failure.
+      photoUrls = await uploadPhotoAssets(photos);
+    } catch (e) {
       setLoading(false);
       return Alert.alert(
         isTa ? 'படம் பதிவேற்ற முடியவில்லை' : 'Photo upload failed',
-        isTa ? 'இணையம் சரிபார்க்கவும்' : 'Please check your connection and try again.',
+        uploadErrorMessage(e, isTa ? 'இணையம் சரிபார்க்கவும்' : 'Please check your connection and try again.'),
       );
     }
 
@@ -205,6 +208,7 @@ export default function BulkPostFlow({ navigation }) {
       if (!res.data?.order && !res.data?.success) {
         throw new Error(res.data?.error || 'Failed to place order');
       }
+      deleteLocalPhotos(photos);
       clearOrderDraft?.();
       Alert.alert(
         isTa ? 'கோரிக்கை பதிவாகியது ✓' : 'Order placed ✓',
@@ -355,6 +359,7 @@ function MaterialsStep({ isTa, materials, setMats, onNext, canNext }) {
                             value={pickedItem?.customName || ''}
                             onChangeText={(v) => setCustomName(cat, sub.en, v)}
                             placeholder={isTa ? 'குறிப்பிட்ட பொருள்' : 'e.g. GI wire, brass turnings'}
+                            maxLength={60}
                             placeholderTextColor={C.ph}
                           />
                         )}
