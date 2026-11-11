@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { reverseGeocode, GEOCODER_ATTRIBUTION } from '../../services/geocode';
 import { getPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
 import { sellerSetup } from '../../services/api';
@@ -95,21 +96,13 @@ export default function BulkDetailsScreen({ route, navigation }) {
       const { latitude, longitude } = pos.coords;
       setLat(latitude); setLng(longitude);
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
-          { headers: { 'Accept-Language': 'en' } },
-        );
-        const data = await res.json();
-        const a = data.address || {};
-        if (a.house_number) setDoor(a.house_number);
-        const rd = a.road || a.pedestrian || a.footway;
-        if (rd) setStreet(rd);
-        const loc = a.suburb || a.neighbourhood || a.hamlet || a.village;
-        if (loc) setLocality(loc);
-        if (a.state) setState(a.state);
-        const dist = a.state_district || a.city_district || a.city;
-        if (dist) setDistrict(dist);
-        if (a.postcode) setPincode(a.postcode);
+        const a = await reverseGeocode(latitude, longitude);
+        if (a.doorNo)   setDoor(a.doorNo);
+        if (a.street)   setStreet(a.street);
+        if (a.locality) setLocality(a.locality);
+        if (a.state)    setState(a.state);
+        if (a.district) setDistrict(a.district);
+        if (a.pincode)  setPincode(a.pincode);
       } catch { /* GPS coords still set, address just isn't auto-filled */ }
       setGpsStatus('success');
     } catch { setGpsStatus('error'); }
@@ -277,6 +270,9 @@ export default function BulkDetailsScreen({ route, navigation }) {
               <Text style={styles.gpsCoords}>
                 {Number(lat).toFixed(4)}, {Number(lng).toFixed(4)}
               </Text>
+            ) : null}
+            {gpsStatus === 'success' ? (
+              <Text style={styles.gpsCoords}>{GEOCODER_ATTRIBUTION}</Text>
             ) : null}
           </View>
 

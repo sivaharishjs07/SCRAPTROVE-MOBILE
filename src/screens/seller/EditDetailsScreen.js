@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { reverseGeocode, GEOCODER_ATTRIBUTION } from '../../services/geocode';
 import { useApp } from '../../context/AppContext';
 import { submitEditRequest } from '../../services/api';
 import { getCityIdAsync } from '../../constants/locations';
@@ -72,24 +73,19 @@ export default function EditDetailsScreen({ navigation }) {
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude: lat, longitude: lng } = pos.coords;
-      // Reverse geocode via Nominatim (matches web)
+      // Reverse geocode (services/geocode.js)
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
-        const data = await res.json();
-        const a = data.address || {};
+        const a = await reverseGeocode(lat, lng);
         setForm(f => ({
           ...f,
           company_lat: lat,
           company_lng: lng,
-          company_door_no:  a.house_number || f.company_door_no,
-          company_street:   a.road || a.pedestrian || a.footway || f.company_street,
-          company_locality: a.suburb || a.neighbourhood || a.hamlet || a.village || f.company_locality,
-          state:            a.state || f.state,
-          district:         a.state_district || a.city_district || a.city || f.district,
-          company_pincode:  a.postcode || f.company_pincode,
+          company_door_no:  a.doorNo   || f.company_door_no,
+          company_street:   a.street   || f.company_street,
+          company_locality: a.locality || f.company_locality,
+          state:            a.state    || f.state,
+          district:         a.district || f.district,
+          company_pincode:  a.pincode  || f.company_pincode,
         }));
       } catch {
         setForm(f => ({ ...f, company_lat: lat, company_lng: lng }));
@@ -277,6 +273,9 @@ export default function EditDetailsScreen({ navigation }) {
                 <Text style={styles.gpsCoords}>
                   📍 {Number(form.company_lat).toFixed(4)}, {Number(form.company_lng).toFixed(4)}
                 </Text>
+              ) : null}
+              {gpsStatus === 'success' ? (
+                <Text style={styles.gpsCoords}>{GEOCODER_ATTRIBUTION}</Text>
               ) : null}
             </View>
           )}

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { leafletHtml, MAP_APP_NAME_FOR_USER_AGENT, onMapShouldStartLoad, parseMapMessage } from '../../constants/mapConfig';
 import * as Location from 'expo-location';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
@@ -32,21 +33,6 @@ const C = {
   red:     '#EF4444',
 };
 
-// ─── OpenStreetMap / Leaflet HTML (no Google Maps API key required) ────────────
-const leafletHtml = (lat, lng) => `
-<!DOCTYPE html><html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>*{margin:0;padding:0;box-sizing:border-box}html,body,#map{height:100%;width:100%}</style>
-</head><body><div id="map"></div><script>
-var map=L.map('map').setView([${lat},${lng}],16);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-var pin=L.marker([${lat},${lng}],{draggable:true}).addTo(map);
-function send(ll){window.ReactNativeWebView.postMessage(JSON.stringify({lat:ll.lat,lng:ll.lng}));}
-pin.on('dragend',function(e){send(e.target.getLatLng());});
-map.on('click',function(e){pin.setLatLng(e.latlng);send(e.latlng);});
-</script></body></html>`;
 
 // ─── Reverse-geocode helper ────────────────────────────────────────────────────
 async function reverseGeocode(lat, lng) {
@@ -301,8 +287,10 @@ export default function PostStep3Screen({ navigation }) {
 
   // WebView message from Leaflet map (pin dragged / map tapped)
   const handleWebMapMessage = async (event) => {
+    const pos = parseMapMessage(event);
+    if (!pos) return; // ignore anything that is not a valid lat/lng
+    const { lat, lng } = pos;
     try {
-      const { lat, lng } = JSON.parse(event.nativeEvent.data);
       setPinCoords({ latitude: lat, longitude: lng });
       setPinLoading(true);
       const addr = await reverseGeocode(lat, lng);
@@ -692,6 +680,8 @@ export default function PostStep3Screen({ navigation }) {
               javaScriptEnabled
               domStorageEnabled
               originWhitelist={['*']}
+              applicationNameForUserAgent={MAP_APP_NAME_FOR_USER_AGENT}
+              onShouldStartLoadWithRequest={onMapShouldStartLoad}
             />
           ) : (
             <View style={[styles.map, { alignItems: 'center', justifyContent: 'center' }]}>
