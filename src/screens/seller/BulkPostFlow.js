@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePermission } from '../../services/permissions';
+import { askForNotificationsInContext } from '../../services/notifications';
 import { useApp } from '../../context/AppContext';
 import { postScrapRequest } from '../../services/api';
 import { uploadPhotoAssets, uploadErrorMessage, deleteLocalPhotos } from '../../services/photoUpload';
@@ -143,16 +145,7 @@ export default function BulkPostFlow({ navigation }) {
   // ── Photo capture / gallery ─────────────────────────────────────────────
   const addPhoto = async (fromCamera) => {
     if (photos.length >= 5) return Alert.alert(isTa ? 'அதிகபட்சம் 5' : 'Max 5 photos');
-    const { status } = fromCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    // TODO(client): Tamil text for the explanation line.
-    if (status !== 'granted') {
-      return Alert.alert(
-        isTa ? 'அனுமதி தேவை' : 'Permission needed',
-        isTa ? undefined : `Allow ${fromCamera ? 'camera' : 'photo'} access for Scrap Trove in your phone Settings to add photos.`,
-      );
-    }
+    if (!(await ensurePermission(fromCamera ? 'camera' : 'photos', language))) return;
     const res = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: false });
@@ -215,7 +208,10 @@ export default function BulkPostFlow({ navigation }) {
         isTa
           ? 'எங்கள் Scrap Trove குழு விரைவில் உங்களைத் தொடர்பு கொள்ளும்.'
           : 'Our Scrap Trove team will review and contact you shortly with rates.',
-        [{ text: 'OK', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'SellerTabs' }] }) }],
+        [{ text: 'OK', onPress: () => {
+          navigation.reset({ index: 0, routes: [{ name: 'SellerTabs' }] });
+          askForNotificationsInContext(language, 'seller');
+        } }],
       );
     } catch (e) {
       Alert.alert(isTa ? 'பிழை' : 'Error', e?.response?.data?.error || e.message || 'Failed to submit');

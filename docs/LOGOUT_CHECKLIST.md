@@ -18,7 +18,7 @@ returns no seller/dealer profile.
 | Saved pickup address | AsyncStorage `savedAddress` + memory | `multiRemove` + state reset |
 | Order draft (address, GPS, photos) | Memory only | Reset to empty |
 | Active order, dealer online toggle | Memory only | Reset |
-| "Push token already registered" cache | AsyncStorage `push_token_registered` | `clearPushTokenCache()` |
+| "Push token already registered" cache, and when notifications were last asked for | AsyncStorage `push_token_registered`, `notifications_asked_at` | `clearPushTokenCache()` |
 | Notifications in the tray, badge | Device | `clearDeviceNotifications()` (best-effort) |
 | Device FCM token | Device | `unregisterForNotificationsAsync()` (best-effort) |
 | Dealer "online" on the server | Backend | `POST /dealer/status {is_online:0}` (dealers only, best-effort, 4s cap) |
@@ -48,7 +48,7 @@ Use two staging accounts, A and B (and an approved dealer account for step 6).
    `adb shell run-as com.scraptrove.app sqlite3 databases/RKStorage "select key from catalystLocalStorage"`
    (if `sqlite3` is missing on the phone, copy the file off with `run-as ... cat`).
    After logout the only key left is `language`: no `user`, `userType`,
-   `savedAddress`, `auth_token` or `push_token_registered`. SecureStore
+   `savedAddress`, `auth_token`, `push_token_registered` or `notifications_asked_at`. SecureStore
    values are encrypted in `shared_prefs/SecureStore.xml`, under names
    ending in `-session_token` / `-pending_auth_token`; after logout neither
    name is present.

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { ensurePermission } from '../../services/permissions';
 import { reverseGeocode, GEOCODER_ATTRIBUTION } from '../../services/geocode';
 import { getPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
@@ -86,10 +87,8 @@ export default function BulkDetailsScreen({ route, navigation }) {
   const fetchGPS = async () => {
     setGpsLoading(true); setGpsStatus(null);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setGpsStatus('error');
-        Alert.alert('Location permission needed', 'Please allow location access to auto-fill your address.');
+      if (!(await ensurePermission('location', language))) {
+        setGpsStatus('error'); // button shows "enter manually"
         return;
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });

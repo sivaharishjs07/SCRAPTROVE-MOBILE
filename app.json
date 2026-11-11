@@ -27,7 +27,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Scrap Trove needs camera access to take photos of your scrap items.",
         "NSPhotoLibraryUsageDescription": "Scrap Trove needs photo library access to upload scrap photos.",
-        "NSLocationWhenInUseUsageDescription": "Scrap Trove uses your location for pickup addresses and finding nearby dealers."
+        "NSLocationWhenInUseUsageDescription": "Scrap Trove uses your location while you use the app to fill in your pickup address and place the map pin."
       }
     },
     "androidStatusBar": {

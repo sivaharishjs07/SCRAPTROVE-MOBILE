@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { getDealerOrders, updateDealerStatus, getDealerAnalytics } from '../../services/api';
+import { askForNotificationsInContext } from '../../services/notifications';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -92,6 +93,8 @@ export default function DealerHomeScreen({ navigation }) {
     const next = !isOnline;
     setIsOnline(next);
     try { await updateDealerStatus(next); } catch {}
+    // Going online is when new-order notifications matter: ask then.
+    if (next) askForNotificationsInContext(language, 'dealer');
   };
 
   const initials = (user?.name || 'DL').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);

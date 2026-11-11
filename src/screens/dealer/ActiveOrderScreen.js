@@ -5,6 +5,7 @@ import {
   Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePermission } from '../../services/permissions';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
@@ -39,11 +40,7 @@ export default function ActiveOrderScreen({ navigation, route }) {
   };
 
   const pickCompletionPhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(t('error', language), 'Allow camera access for Scrap Trove in your phone Settings to take the completion photo.');
-      return;
-    }
+    if (!(await ensurePermission('camera', language))) return;
     const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
     // Keep the whole asset (uri + size) so the upload can be resized.
     if (!result.canceled) setCompletionPhoto(result.assets[0]);

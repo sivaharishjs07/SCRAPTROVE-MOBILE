@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePermission } from '../../services/permissions';
 import { getPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
@@ -180,11 +181,7 @@ export default function DetailsFormScreen({ navigation, route }) {
         {
           text: '📷  Take Photo',
           onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Allow camera access in your phone Settings.');
-              return;
-            }
+            if (!(await ensurePermission('camera', language))) return;
             const result = await ImagePicker.launchCameraAsync({
               allowsEditing: true, aspect: [4, 3], quality: 0.85,
             });
@@ -197,11 +194,7 @@ export default function DetailsFormScreen({ navigation, route }) {
         {
           text: '🖼️  Choose from Gallery',
           onPress: async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Allow photo library access in your phone Settings.');
-              return;
-            }
+            if (!(await ensurePermission('photos', language))) return;
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
               allowsEditing: true, aspect: [4, 3], quality: 0.85,

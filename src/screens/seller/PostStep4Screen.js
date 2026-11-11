@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { ensurePermission } from '../../services/permissions';
+import { askForNotificationsInContext } from '../../services/notifications';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { postScrapRequest, joinPincodeWaitlist } from '../../services/api';
@@ -65,11 +67,7 @@ export default function PostStep4Screen({ navigation }) {
 
   const pickCamera = async () => {
     setPickerOpen(false);
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Allow camera access in Settings.');
-      return;
-    }
+    if (!(await ensurePermission('camera', language))) return;
     const r = await ImagePicker.launchCameraAsync({
       allowsEditing: false,   // No crop screen
       quality: 0.85,
@@ -86,11 +84,7 @@ export default function PostStep4Screen({ navigation }) {
 
   const pickGallery = async () => {
     setPickerOpen(false);
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Allow photo library access in Settings.');
-      return;
-    }
+    if (!(await ensurePermission('photos', language))) return;
     const r = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,   // No crop screen
@@ -181,6 +175,9 @@ export default function PostStep4Screen({ navigation }) {
       clearOrderDraft();
 
       setActiveOrder(backendOrder);
+      // A good moment to ask for notifications: they tell the seller when a
+      // dealer accepts this pickup. Not awaited; never blocks the order.
+      askForNotificationsInContext(language, 'seller');
       navigation.reset({
         index: 0,
         routes: [

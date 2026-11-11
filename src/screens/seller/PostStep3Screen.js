@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { leafletHtml, MAP_APP_NAME_FOR_USER_AGENT, onMapShouldStartLoad, parseMapMessage } from '../../constants/mapConfig';
 import * as Location from 'expo-location';
+import { ensurePermission } from '../../services/permissions';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { listAddresses, addAddress, deleteAddress, checkPincode, joinPincodeWaitlist } from '../../services/api';
@@ -236,14 +237,9 @@ export default function PostStep3Screen({ navigation }) {
   };
   // Location permission NOT requested on mount — only when user taps a button
 
-  const requestPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Location Permission', 'Please allow location access to use this feature.');
-      return false;
-    }
-    return true;
-  };
+  // Explains first; offers Settings if blocked. Manual address entry stays
+  // available either way.
+  const requestPermission = () => ensurePermission('location', language);
 
   // ── GPS detect ─────────────────────────────────────────────────────────────
   const detectLocation = async () => {

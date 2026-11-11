@@ -103,6 +103,7 @@ the earlier original repository was not scanned.
 | Last pickup address (written after each order) | AsyncStorage `savedAddress` | Deleted |
 | Order draft (address, GPS, photo paths) | Memory only | Reset |
 | "Push token already registered" flag | AsyncStorage `push_token_registered` | Deleted |
+| When notifications were last asked for | AsyncStorage `notifications_asked_at` | Deleted |
 | Language | AsyncStorage `language` | Kept |
 | Picked photos | App cache folder | Deleted after a successful submit |
 
@@ -169,8 +170,13 @@ manifest; confirm on a built APK with `aapt dump permissions`):
 
 Explicitly blocked: `RECORD_AUDIO`, `RECEIVE_BOOT_COMPLETED`,
 `SYSTEM_ALERT_WINDOW`. No background location, no `READ_MEDIA_*`.
-Every permission request handles denial without crashing; address entry
-falls back to typing. Explanations before the request are task P5.
+All requests go through `src/services/permissions.js`: a short explanation
+first ("Not now" / "Continue"), then Android's prompt; if a permission is
+blocked, the app explains and offers "Open Settings". Denial never crashes;
+address entry falls back to typing. Notification permission is never
+requested at launch or login: it is asked in context (after a seller places
+a pickup, when a dealer goes online), at most once every 7 days after
+"Not now", and never again once blocked.
 
 ## 9. Over-the-air (OTA) updates
 

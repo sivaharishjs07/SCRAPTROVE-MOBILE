@@ -13,8 +13,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { registerPushToken, trackSession } from './api';
+import { ensurePermission } from './permissions';
 
 const TOKEN_CACHE_KEY = 'push_token_registered';
+
+// When the in-context notification question was last shown, so a "Not now"
+// is respected for a while instead of asking after every order.
+const ASKED_AT_KEY = 'notifications_asked_at';
+const ASK_AGAIN_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Bumped on every logout (clearPushTokenCache). See registerForPushNotifications.
 let pushGeneration = 0;
@@ -43,8 +49,9 @@ export function getDeviceModel() {
 }
 
 /**
- * Requests permission, gets the Expo push token, and registers it with the
- * backend — but ONLY if the token is new or has changed since last registration.
+ * If notifications are already allowed: gets the Expo push token and
+ * registers it with the backend — but ONLY if the token is new or has
+ * changed since last registration. Never asks for permission itself.
  *
  * Safe to call on every app open and on login; it is a no-op when the token
  * is already cached and unchanged.
@@ -65,16 +72,14 @@ export async function registerForPushNotifications() {
     // which would silently block push registration even when the user granted permission.
     // Permissions check below is the correct gate for push support.
 
+    // Never shows the system prompt: this runs at launch, login and on every
+    // return to the app, and asking there (with no context, every time) is
+    // what Play and Android discourage. The prompt is shown in context by
+    // askForNotificationsInContext() below; until it is granted this is a
+    // no-op. (Below Android 13 notifications are allowed by default.)
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      if (__DEV__) console.log('[Push] Permission not granted — status:', finalStatus);
+      if (__DEV__) console.log('[Push] Permission not granted — status:', existingStatus);
       return null;
     }
 
@@ -121,13 +126,50 @@ export async function registerForPushNotifications() {
 }
 
 /**
+ * Ask for notification permission at a moment where it is obviously useful
+ * (a seller just placed a pickup, a dealer just went online), with an
+ * explanation first, then register the device. Asks at most once every 7
+ * days, and never when notifications are blocked (no Settings nagging
+ * here; the user turned them off on purpose). Never throws.
+ *
+ * @param {string} language
+ * @param {'seller'|'dealer'} role  picks the explanation text
+ * @returns {Promise<boolean>} whether notifications are now allowed
+ */
+export async function askForNotificationsInContext(language, role) {
+  try {
+    const { granted, canAskAgain } = await Notifications.getPermissionsAsync();
+    if (granted) {
+      registerForPushNotifications().catch(() => {});
+      return true;
+    }
+    if (canAskAgain === false) return false;
+
+    const last = Number(await AsyncStorage.getItem(ASKED_AT_KEY).catch(() => null)) || 0;
+    if (Date.now() - last < ASK_AGAIN_AFTER_MS) return false;
+    await AsyncStorage.setItem(ASKED_AT_KEY, String(Date.now())).catch(() => {});
+
+    const ok = await ensurePermission('notifications', language, {
+      reasonKey: role === 'dealer' ? 'perm_notifications_dealer_why' : 'perm_notifications_seller_why',
+      offerSettingsIfBlocked: false,
+    });
+    if (ok) registerForPushNotifications().catch(() => {});
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Call this on logout to clear the cached token.
  * On the next login the token will be re-registered with the backend once,
  * ensuring the correct user is associated (handles device-sharing edge case).
  */
 export function clearPushTokenCache() {
   pushGeneration += 1;
-  return AsyncStorage.removeItem(TOKEN_CACHE_KEY).catch(() => {});
+  // Also forget when we last asked, so the next person to log in on this
+  // phone is asked fresh.
+  return AsyncStorage.multiRemove([TOKEN_CACHE_KEY, ASKED_AT_KEY]).catch(() => {});
 }
 
 /**

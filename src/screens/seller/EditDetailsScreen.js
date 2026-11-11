@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { ensurePermission } from '../../services/permissions';
 import { reverseGeocode, GEOCODER_ATTRIBUTION } from '../../services/geocode';
 import { useApp } from '../../context/AppContext';
 import { submitEditRequest } from '../../services/api';
@@ -34,7 +35,7 @@ const SECTORS = [
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function EditDetailsScreen({ navigation }) {
-  const { user } = useApp();
+  const { user, language } = useApp();
   const isBulk = user?.seller_type === 'bulk';
 
   const [form, setForm] = useState({
@@ -65,10 +66,8 @@ export default function EditDetailsScreen({ navigation }) {
   const fetchGPS = async () => {
     setGpsLoading(true); setGpsStatus(null);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      if (!(await ensurePermission('location', language))) {
         setGpsStatus('error');
-        Alert.alert('Location Permission', 'We need location permission to auto-fill your address.');
         return;
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
