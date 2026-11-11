@@ -229,7 +229,7 @@ Open points:
 | Issue | Status / owner |
 |---|---|
 | Target API 34; Play needs 36 | SDK upgrade, task P2 |
-| No in-app account deletion | Task P4; needs a backend endpoint |
+| No in-app account deletion | Task P4; needs a backend endpoint and a public deletion page: `docs/ACCOUNT_DELETION_REQUEST.md` |
 | No dealer login path (`UserTypeScreen` offers sellers only); existing dealers who log out cannot log back in | Client decision |
 | Returning dealers are shown the full dealer screens whatever their approval status (only reachable once dealer login exists) | App fix pending; backend must enforce |
 | Rating screen uses `POST /ratings` without the order ID and hides errors | App fix pending; backend question |

@@ -200,8 +200,9 @@ accepted if they point to our own Cloudinary account and folder.
 
 ---
 
-## Coming next (not yet reviewed)
+## G. Account deletion (required for Google Play)
 
-Google Play requires in-app account deletion. The app has no delete
-endpoint today; a separate request for it will follow (for example
-`DELETE /auth/me`), together with what data it must remove.
+The app has no way to delete an account, and the API has no endpoint for
+it. The full request (proposed endpoints, what must be deleted, open
+orders, timing, the token-free web variant) is in
+`docs/ACCOUNT_DELETION_REQUEST.md`, Part A.
