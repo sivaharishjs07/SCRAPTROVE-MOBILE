@@ -7,6 +7,13 @@ import {
   trackAppSession,
 } from '../services/notifications';
 import api from '../services/api';
+import {
+  migrateLegacyTokens,
+  getSessionToken,
+  setSessionToken,
+  clearAllTokens,
+  withoutToken,
+} from '../services/authToken';
 
 const AppContext = createContext(null);
 
@@ -72,9 +79,20 @@ export const AppProvider = ({ children }) => {
 
   const loadSession = async () => {
     try {
-      const storedUser     = await AsyncStorage.getItem('user');
-      const storedUserType = await AsyncStorage.getItem('userType');
+      // Move any pre-SecureStore token out of AsyncStorage before reading
+      // the user, so existing logged-in users stay logged in.
+      await migrateLegacyTokens();
+      let storedUser       = await AsyncStorage.getItem('user');
+      let storedUserType   = await AsyncStorage.getItem('userType');
       const storedLang     = await AsyncStorage.getItem('language');
+      // A cached profile without a token cannot make any authenticated call
+      // (e.g. app data restored onto a new phone). Treat it as logged out
+      // instead of showing tabs that fail on every request.
+      if (storedUser && !(await getSessionToken())) {
+        await AsyncStorage.multiRemove(['user', 'userType']);
+        storedUser = null;
+        storedUserType = null;
+      }
       if (storedUser) {
         setUser(JSON.parse(storedUser));
         // Track this app-open session
@@ -93,9 +111,13 @@ export const AppProvider = ({ children }) => {
   };
 
   const login = async (userData, type) => {
-    setUser(userData);
+    // Token goes to SecureStore first so requests made right after login
+    // are authenticated; the profile (without the token) goes to AsyncStorage.
+    if (userData?.token) await setSessionToken(userData.token);
+    const profile = withoutToken(userData);
+    setUser(profile);
     setUserType(type);
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    await AsyncStorage.setItem('user', JSON.stringify(profile));
     await AsyncStorage.setItem('userType', type);
     // Attempt push token registration — no-op if token is already cached and unchanged.
     // Registers once after reinstall / clear-data, or if FCM rotated the token.
@@ -104,7 +126,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUser = async (fields) => {
-    const updated = { ...user, ...fields };
+    const updated = withoutToken({ ...user, ...fields });
     setUser(updated);
     await AsyncStorage.setItem('user', JSON.stringify(updated));
   };
@@ -129,10 +151,10 @@ export const AppProvider = ({ children }) => {
         return null;
       }
       const profile = data.seller || data.dealer || {};
-      const merged = {
+      // The session token is not part of the profile; it stays in SecureStore.
+      const merged = withoutToken({
         ...(user || {}),
         ...(data.user || {}),
-        token: user?.token, // preserve existing session token
         reg_id:        profile.reg_id ?? user?.reg_id ?? null,
         name:          profile.name || profile.owner_name || user?.name || '',
         gmail:         profile.gmail          ?? user?.gmail          ?? '',
@@ -153,7 +175,7 @@ export const AppProvider = ({ children }) => {
         company_pincode:   profile.company_pincode   ?? user?.company_pincode   ?? null,
         company_lat:       profile.company_lat       ?? user?.company_lat       ?? null,
         company_lng:       profile.company_lng       ?? user?.company_lng       ?? null,
-      };
+      });
       setUser(merged);
       await AsyncStorage.setItem('user', JSON.stringify(merged));
       return merged;
@@ -172,6 +194,9 @@ export const AppProvider = ({ children }) => {
     // Clear push token cache on logout so the next login re-registers once
     // (ensures correct user is associated if the device is shared)
     await clearPushTokenCache();
+    // The token used to be removed together with 'user'; now that it lives in
+    // SecureStore it must be cleared explicitly. (Full logout audit: task S3.)
+    await clearAllTokens();
     await AsyncStorage.multiRemove(['user', 'userType']);
   };
 

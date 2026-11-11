@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
 import { sellerSetup } from '../../services/api';
 import { FONTS } from '../../constants/typography';
@@ -163,7 +163,7 @@ export default function BulkDetailsScreen({ route, navigation }) {
       const seller = data.seller || {};
       const userData = {
         ...(data.user || {}),
-        token: (await AsyncStorage.getItem('auth_token')) || undefined,
+        token: (await getPendingToken()) || undefined,
         reg_id:            seller.reg_id || null,
         name:              seller.name || name.trim(),
         gmail:             seller.gmail || gmail.trim(),
@@ -184,7 +184,7 @@ export default function BulkDetailsScreen({ route, navigation }) {
         company_lng:       seller.company_lng ?? lng,
       };
       await login(userData, 'seller');
-      await AsyncStorage.removeItem('auth_token');
+      await clearPendingToken();
       navigation.reset({ index: 0, routes: [{ name: 'SellerTabs' }] });
     } catch (e) {
       const msg = e?.response?.data?.error || e.message || 'Failed to register';

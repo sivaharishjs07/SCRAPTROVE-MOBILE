@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
@@ -50,7 +50,7 @@ export default function OTPScreen({ navigation, route }) {
 
       if (token) {
         // Store temp token — used by api interceptor during registration calls
-        await AsyncStorage.setItem('auth_token', token);
+        await setPendingToken(token);
       }
 
       if (!is_new && userData) {
@@ -86,7 +86,7 @@ export default function OTPScreen({ navigation, route }) {
           company_lng:       profileData.company_lng       ?? null,
         };
         await login(userWithToken, role);
-        await AsyncStorage.removeItem('auth_token');
+        await clearPendingToken();
 
         if (role === 'seller' && seller) {
           navigation.reset({ index: 0, routes: [{ name: 'SellerTabs' }] });

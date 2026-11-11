@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPendingToken, clearPendingToken } from '../../services/authToken';
 import { useApp } from '../../context/AppContext';
 import { FONTS } from '../../constants/typography';
 import { useLocations, statesList, districts, cities, getCityIdAsync } from '../../constants/locations';
@@ -267,9 +267,9 @@ export default function DetailsFormScreen({ navigation, route }) {
         home_door_no: homeDoor.trim(), home_street: homeStreet.trim(),
         home_landmark: homeLandmark.trim() || null, home_pincode: homePincode.trim() });
       // Use the real session token from setup response or temp token stored after OTP verify
-      const sessionToken = res.data?.token || (await AsyncStorage.getItem('auth_token'));
+      const sessionToken = res.data?.token || (await getPendingToken());
       if (!sessionToken) throw new Error('Session token missing. Please try logging in again.');
-      await AsyncStorage.removeItem('auth_token'); // clear temp token — now in user object
+      await clearPendingToken(); // clear temp token — now in user object
       const sellerData = res.data?.seller || {};
       if (!res.data?.user?.id && !sellerData.user_id) throw new Error('Account ID missing from server response. Please try again.');
       const userData = {
@@ -369,9 +369,9 @@ export default function DetailsFormScreen({ navigation, route }) {
       };
 
       const res = await dealerRegister(payload);
-      const sessionToken = res.data?.token || (await AsyncStorage.getItem('auth_token'));
+      const sessionToken = res.data?.token || (await getPendingToken());
       if (!sessionToken) throw new Error('Session token missing. Please try logging in again.');
-      await AsyncStorage.removeItem('auth_token');
+      await clearPendingToken();
       const dealerData = res.data?.dealer || {};
       if (!res.data?.user?.id && !dealerData.user_id) throw new Error('Account ID missing from server response. Please try again.');
       const userData = {
@@ -395,7 +395,7 @@ export default function DetailsFormScreen({ navigation, route }) {
       await login(userData, 'dealer_pending');
       navigation.reset({ index: 0, routes: [{ name: 'DealerPending' }] });
     } catch (err) {
-      await AsyncStorage.removeItem('auth_token');
+      await clearPendingToken();
       const msg = err?.response?.data?.error || 'Registration failed. Please check your internet connection and try again.';
       Alert.alert('Registration Failed', msg, [{ text: 'OK' }]);
     } finally {

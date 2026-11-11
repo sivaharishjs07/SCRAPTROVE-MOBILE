@@ -1,6 +1,6 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
+import { getAuthToken } from './authToken';
 
 // API host = EXPO_PUBLIC_API_URL from the environment. Set in:
 //   - .env.local for `npx expo start`  (local dev)
@@ -42,22 +42,13 @@ api.interceptors.request.use(async (config) => {
     e.response = { status: 0, data: { error: 'This build has no server address configured (EXPO_PUBLIC_API_URL). Please install a build made from the preview or production profile.' } };
     throw e;
   }
-  // Primary: logged-in user token. The parse is guarded because a throw in
-  // here rejects the request with no response at all, which every screen
-  // then reports as a connection problem — one corrupt stored value would
-  // break every axios call on the device while leaving fetch() working.
-  const user = await AsyncStorage.getItem('user');
-  if (user) {
-    let parsed = null;
-    try { parsed = JSON.parse(user); } catch { parsed = null; }
-    if (parsed?.token && parsed.token !== 'demo-token') {
-      config.headers.Authorization = `Bearer ${parsed.token}`;
-      return config;
-    }
-  }
-  // Fallback: temp token stored after OTP verify (used before full login during registration)
-  const tempToken = await AsyncStorage.getItem('auth_token');
-  if (tempToken) config.headers.Authorization = `Bearer ${tempToken}`;
+  // Logged-in session token first, then the temporary sign-up token issued
+  // by verify-otp. Both live in SecureStore (see services/authToken.js).
+  // Guarded because a throw in here rejects the request with no response at
+  // all, which every screen then reports as a connection problem.
+  let token = null;
+  try { token = await getAuthToken(); } catch { token = null; }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
