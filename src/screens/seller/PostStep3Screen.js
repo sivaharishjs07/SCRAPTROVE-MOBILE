@@ -656,7 +656,7 @@ export default function PostStep3Screen({ navigation }) {
       <Modal visible={mapVisible} animationType="slide" onRequestClose={() => setMapVisible(false)}>
         <View style={styles.mapRoot}>
           {/* Map header */}
-          <SafeAreaView edges={['top']} style={styles.mapHeader}>
+          <SafeAreaView edges={['top', 'bottom']} style={styles.mapHeader}>
             <TouchableOpacity onPress={() => setMapVisible(false)} style={styles.mapClose}>
               <Text style={styles.mapCloseText}>✕</Text>
             </TouchableOpacity>

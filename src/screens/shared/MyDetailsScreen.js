@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONTS } from '../../constants/typography';
 import { COLORS } from '../../constants/colors';
 
@@ -34,6 +35,7 @@ function DetailRow({ icon, label, value, onEditPress, last = false }) {
 }
 
 export default function MyDetailsScreen({ navigation }) {
+  const insets = useSafeAreaInsets(); // email sheet sits above the navigation bar
   const { language, user, login, userType } = useApp();
   const [emailModal, setEmailModal] = useState(false);
   const [emailValue, setEmailValue] = useState('');
@@ -63,7 +65,7 @@ export default function MyDetailsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backArrow}>{'←'}</Text>
@@ -123,7 +125,7 @@ export default function MyDetailsScreen({ navigation }) {
           style={styles.overlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: 24 + insets.bottom }]}>
             <Text style={styles.sheetTitle}>
               {email
                 ? (language === 'ta' ? 'மின்னஞ்சல் திருத்து' : 'Edit Email')

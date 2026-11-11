@@ -4,12 +4,14 @@ import {
   TextInput, ActivityIndicator,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
+import { useBottomSpace } from '../../components/useBottomSpace';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
 import { rateDealer } from '../../services/api';
 
 export default function RateDealerScreen({ navigation, route }) {
+  const bottomSpace = useBottomSpace(); // edge-to-edge: keep content above the navigation bar
   const { order } = route.params;
   const { language } = useApp();
   const [rating, setRating] = useState(0);
@@ -43,7 +45,7 @@ export default function RateDealerScreen({ navigation, route }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomSpace }]}>
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
         <Text style={styles.backText}>← {t('back', language)}</Text>
       </TouchableOpacity>

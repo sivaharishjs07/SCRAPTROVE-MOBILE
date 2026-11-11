@@ -159,7 +159,7 @@ export default function TicketChatScreen({ navigation, route }) {
   const isClosed = ticket.status === 'closed';
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

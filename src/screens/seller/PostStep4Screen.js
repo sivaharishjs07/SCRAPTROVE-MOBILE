@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ensurePermission } from '../../services/permissions';
 import { askForNotificationsInContext } from '../../services/notifications';
 import { useApp } from '../../context/AppContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONTS } from '../../constants/typography';
 import { postScrapRequest, joinPincodeWaitlist } from '../../services/api';
 import { uploadPhotoAssets, uploadErrorMessage, deleteLocalPhotos } from '../../services/photoUpload';
@@ -36,6 +37,7 @@ const C = {
 // guessed IDs did not match the real catalogue.
 
 export default function PostStep4Screen({ navigation }) {
+  const insets = useSafeAreaInsets(); // photo picker sheet sits above the navigation bar
   const { language, setActiveOrder, updateUser, orderDraft, setOrderDraft, clearOrderDraft, saveAddress, user } = useApp();
 
   // Read all order data from context draft (populated by steps 1–3)
@@ -352,7 +354,7 @@ export default function PostStep4Screen({ navigation }) {
           activeOpacity={1}
           onPress={() => setPickerOpen(false)}
         >
-          <View style={styles.pickerSheet}>
+          <View style={[styles.pickerSheet, { paddingBottom: 36 + insets.bottom }]}>
             <View style={styles.pickerHandle} />
             <Text style={styles.pickerTitle}>
               {language === 'ta' ? 'படம் சேர்க்கவும்' : 'Add Scrap Photo'}

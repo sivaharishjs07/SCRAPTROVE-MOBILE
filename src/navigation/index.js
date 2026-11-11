@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, TouchableOpacity, ActivityIndicator, View, StyleSheet } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp } from '../context/AppContext';
 import { COLORS } from '../constants/colors';
@@ -126,6 +127,18 @@ const sharedTabOpts = {
   },
 };
 
+// Edge-to-edge (SDK 54 / Android 16): the system navigation bar is drawn over
+// the bottom of the app, so the fixed 68px tab bar grows by the bottom inset
+// and keeps its icons above the gesture/3-button bar.
+const tabOptions = (bottomInset) => ({
+  ...sharedTabOpts,
+  tabBarStyle: {
+    ...sharedTabOpts.tabBarStyle,
+    height: 68 + bottomInset,
+    paddingBottom: 8 + bottomInset,
+  },
+});
+
 // ─── Seller Tab Navigator ────────────────────────────────────────────────────────
 // Tab 4 (right of the FAB) differs by seller type:
 //   small seller  -> 'Yard Finds'  (browse reusable stock from our yard)
@@ -134,10 +147,11 @@ const sharedTabOpts = {
 // on WhatsApp, not published.
 const SellerTabs = ({ navigation }) => {
   const { user } = useApp();
+  const insets = useSafeAreaInsets();
   const isBulk = user?.seller_type === 'bulk';
 
   return (
-    <Tab.Navigator screenOptions={sharedTabOpts}>
+    <Tab.Navigator screenOptions={tabOptions(insets.bottom)}>
       <Tab.Screen
         name="SellerHome"
         component={SellerHomeScreen}
@@ -204,8 +218,9 @@ function DealerFabButton({ onPress }) {
 
 // ─── Dealer Tab Navigator ────────────────────────────────────────────────────────
 const DealerTabs = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={sharedTabOpts}>
+    <Tab.Navigator screenOptions={tabOptions(insets.bottom)}>
       <Tab.Screen
         name="DealerHome"
         component={DealerHomeScreen}

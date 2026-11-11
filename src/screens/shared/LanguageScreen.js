@@ -14,7 +14,7 @@ export default function LanguageScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
 
       {/* Header */}
       <View style={styles.header}>

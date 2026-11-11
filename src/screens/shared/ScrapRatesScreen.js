@@ -4,6 +4,7 @@ import {
   TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
+import { useBottomSpace } from '../../components/useBottomSpace';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
@@ -34,6 +35,8 @@ const parseApiRates = (data) => {
 };
 
 export default function ScrapRatesScreen({ navigation }) {
+  // 0 when shown as a tab (the tab bar already reserves the space)
+  const bottomSpace = useBottomSpace();
   const { language } = useApp();
   const [rates, setRates]         = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -95,7 +98,7 @@ export default function ScrapRatesScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomSpace }]}>
 
       {/* Header */}
       <View style={styles.header}>

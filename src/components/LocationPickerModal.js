@@ -12,6 +12,7 @@ import {
   Modal, FlatList,
 } from 'react-native';
 import { FONTS } from '../constants/typography';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const C = {
   text:    '#0A1628',
@@ -25,10 +26,11 @@ const C = {
 
 // ─── Bottom-sheet modal list ───────────────────────────────────────────────────
 export function PickerModal({ visible, title, items, onSelect, onClose }) {
+  const insets = useSafeAreaInsets(); // list sheet sits above the navigation bar
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={pm.backdrop} activeOpacity={1} onPress={onClose} />
-      <View style={pm.sheet}>
+      <View style={[pm.sheet, { paddingBottom: insets.bottom }]}>
         <View style={pm.handle} />
         <Text style={pm.title}>{title}</Text>
         <FlatList

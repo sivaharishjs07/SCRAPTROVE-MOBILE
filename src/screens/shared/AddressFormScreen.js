@@ -155,7 +155,7 @@ export default function AddressFormScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -307,7 +307,7 @@ export default function AddressFormScreen({ navigation }) {
       {/* Map modal */}
       <Modal visible={mapVisible} animationType="slide" onRequestClose={() => setMapVisible(false)}>
         <View style={styles.mapRoot}>
-          <SafeAreaView edges={['top']} style={styles.mapHeader}>
+          <SafeAreaView edges={['top', 'bottom']} style={styles.mapHeader}>
             <TouchableOpacity onPress={() => setMapVisible(false)} style={styles.mapClose}>
               <Text style={styles.mapCloseText}>{'✕'}</Text>
             </TouchableOpacity>

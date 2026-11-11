@@ -4,6 +4,7 @@ import {
   Animated, Linking, Alert, ScrollView, Image,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
+import { useBottomSpace } from '../../components/useBottomSpace';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
@@ -49,6 +50,7 @@ const BACKEND_TO_SCREEN = {
 };
 
 export default function OrderStatusScreen({ navigation, route }) {
+  const bottomSpace = useBottomSpace(); // edge-to-edge: keep content above the navigation bar
   const { order: initialOrder } = route.params;
   const { language, setActiveOrder } = useApp();
   const [order, setOrder] = useState(initialOrder);
@@ -158,7 +160,7 @@ export default function OrderStatusScreen({ navigation, route }) {
     : (() => { try { return JSON.parse(order.photo_urls || '[]'); } catch { return []; } })();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomSpace }]}>
       {/* ── Pinned Header ── */}
       <View style={[styles.header, { backgroundColor: info.color }]}>
         <TouchableOpacity onPress={() => navigation.navigate('SellerHome')} style={styles.headerBack}>

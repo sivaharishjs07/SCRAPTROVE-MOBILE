@@ -4,6 +4,7 @@ import {
   Image, ScrollView, Animated, Alert,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
+import { useBottomSpace } from '../../components/useBottomSpace';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
@@ -13,6 +14,7 @@ import { acceptOrder } from '../../services/api';
 const WINDOW_SECONDS = { premium_max: 15, premium_plus: 30, premium: 30, free: 30 };
 
 export default function IncomingOrderScreen({ navigation, route }) {
+  const bottomSpace = useBottomSpace(); // edge-to-edge: footer above the navigation bar
   const { order } = route.params;
   const { language, user, setActiveOrder } = useApp();
   const [countdown, setCountdown]   = useState(WINDOW_SECONDS[user?.subscriptionTier || 'free']);
@@ -142,7 +144,7 @@ export default function IncomingOrderScreen({ navigation, route }) {
 
       {/* Accept CTA */}
       {!expired && (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(28, 16 + bottomSpace) }]}>
           <TouchableOpacity
             style={[styles.acceptBtn, accepting && { opacity: 0.7 }]}
             onPress={handleAccept}

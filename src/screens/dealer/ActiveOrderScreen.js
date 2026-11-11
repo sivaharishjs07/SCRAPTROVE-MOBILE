@@ -7,6 +7,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { ensurePermission } from '../../services/permissions';
 import { useApp } from '../../context/AppContext';
+import { useBottomSpace } from '../../components/useBottomSpace';
 import { t } from '../../constants/translations';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
@@ -18,6 +19,7 @@ import { uploadPhotoAsset, uploadErrorMessage, deleteLocalPhotos } from '../../s
 const STEPS = ['accepted', 'on_way', 'arrived', 'completed'];
 
 export default function ActiveOrderScreen({ navigation, route }) {
+  const bottomSpace = useBottomSpace(); // edge-to-edge: keep content above the navigation bar
   const { order: initialOrder } = route.params;
   const { language, setActiveOrder } = useApp();
   const [order]                     = useState(initialOrder);
@@ -111,7 +113,7 @@ export default function ActiveOrderScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomSpace }]}>
 
       {/* Nav */}
       <View style={styles.navBar}>

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTickets, createTicket, getSellerOrders, getDealerOrders } from '../../services/api';
 import { FONTS } from '../../constants/typography';
 
@@ -47,6 +48,7 @@ const formatDate = (d) => {
 };
 
 export default function SupportScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets(); // new-ticket sheet sits above the navigation bar
   const { language, user } = useApp();
   // When opened from an order ("Raise an Issue with this Order"), the order
   // is already known, so the flow skips the picker and starts at the issue
@@ -181,7 +183,7 @@ export default function SupportScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -230,7 +232,7 @@ export default function SupportScreen({ navigation, route }) {
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: 20 + insets.bottom }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 {phase === 'issue' && !orderLocked ? (
