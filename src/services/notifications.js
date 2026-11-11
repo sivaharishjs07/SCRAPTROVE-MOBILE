@@ -30,7 +30,10 @@ let pendingUnregister = null;
 // Configure how notifications are displayed when the app is foregrounded
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    // SDK 54: shouldShowAlert is deprecated; banner + list together are the
+    // same as the old shouldShowAlert: true.
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),

@@ -11,7 +11,8 @@
  * The request itself is unchanged: POST /upload { data: <base64>, type }.
  */
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+// SDK 54: cacheDirectory/deleteAsync live in the legacy API.
+import * as FileSystem from 'expo-file-system/legacy';
 import { uploadPhoto } from './api';
 
 const MAX_EDGE = 1600;
