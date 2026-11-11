@@ -171,6 +171,9 @@ export const translations = {
     tamil: 'தமிழ்',
     english: 'English',
     logout: 'Logout',
+    // TODO(client): Tamil text needed for these two; until then Tamil users see the English.
+    session_expired_title: 'Signed out',
+    session_expired_body: 'Your session has expired. Please log in again.',
     version: 'Version',
     about: 'About Scrap Trove',
     dealer_id: 'Dealer ID',

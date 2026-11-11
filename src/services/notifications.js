@@ -74,7 +74,7 @@ export async function registerForPushNotifications() {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('[Push] Permission not granted — status:', finalStatus);
+      if (__DEV__) console.log('[Push] Permission not granted — status:', finalStatus);
       return null;
     }
 
@@ -103,10 +103,10 @@ export async function registerForPushNotifications() {
         if (generation !== pushGeneration) return null; // logged out meanwhile
         // Cache only after a successful backend call
         await AsyncStorage.setItem(TOKEN_CACHE_KEY, token).catch(() => {});
-        console.log('[Push] Token registered successfully');
+        if (__DEV__) console.log('[Push] Token registered successfully');
       } catch (err) {
         // Don't cache on failure so it retries on the next open
-        console.error('[Push] registerPushToken failed:', err?.response?.data || err?.message);
+        if (__DEV__) console.error('[Push] registerPushToken failed:', err?.response?.data || err?.message);
       }
     }
 
@@ -114,8 +114,8 @@ export async function registerForPushNotifications() {
   } catch (err) {
     // Surface the REAL error — most common cause: google-services.json missing
     // or FCM credentials not configured in EAS dashboard.
-    console.error('[Push] getExpoPushTokenAsync FAILED:', err?.message || String(err));
-    console.error('[Push] Hint: ensure google-services.json is present and referenced in app.json');
+    if (__DEV__) console.error('[Push] getExpoPushTokenAsync FAILED:', err?.message || String(err));
+    if (__DEV__) console.error('[Push] Hint: ensure google-services.json is present and referenced in app.json');
     return null;
   }
 }

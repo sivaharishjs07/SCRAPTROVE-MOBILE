@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Alert } from 'react-native';
+import { t } from '../constants/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   registerForPushNotifications,
@@ -7,7 +8,7 @@ import {
   clearDeviceNotifications,
   trackAppSession,
 } from '../services/notifications';
-import api, { updateDealerStatus } from '../services/api';
+import api, { updateDealerStatus, setUnauthorizedHandler } from '../services/api';
 import {
   migrateLegacyTokens,
   getSessionToken,
@@ -231,6 +232,19 @@ export const AppProvider = ({ children }) => {
     //    best-effort and not awaited, so logout is never held up by it.
     clearDeviceNotifications().catch(() => {});
   };
+
+  // The server rejected the session token (401, see services/api.js): log
+  // out and say why, instead of leaving every screen failing. The ref keeps
+  // the handler pointing at the current logout/language.
+  const onUnauthorizedRef = useRef(null);
+  onUnauthorizedRef.current = async () => {
+    await logout();
+    Alert.alert(t('session_expired_title', language), t('session_expired_body', language));
+  };
+  useEffect(() => {
+    setUnauthorizedHandler(() => onUnauthorizedRef.current?.());
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   // ── Order draft helpers ────────────────────────────────────────────────────
   // Merge partial fields into the draft (each PostStep calls this)

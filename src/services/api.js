@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as Device from 'expo-device';
-import { getAuthToken } from './authToken';
+import { getAuthToken, getSessionToken } from './authToken';
 
 // API host = EXPO_PUBLIC_API_URL from the environment. Set in:
 //   - .env.local for `npx expo start`  (local dev)
@@ -11,15 +11,34 @@ const RUNTIME_API = (
 ).replace(/\/+$/, '');
 const BASE_URL = `${RUNTIME_API}/api`;
 
-// Host WITHOUT the /api suffix — used by non-axios callers (city master
-// fetch in constants/locations.js).
-export const API_BASE = RUNTIME_API;
+// Release builds talk to the API over HTTPS only: the session token and
+// personal data travel in every request. A plain http:// address is allowed
+// in development (__DEV__) for a local server, never in a release build.
+const API_IS_HTTPS = /^https:\/\//i.test(RUNTIME_API);
+const API_INSECURE = !!RUNTIME_API && !API_IS_HTTPS && !__DEV__;
 
-// False when the build has no EXPO_PUBLIC_API_URL. Without this, a build
-// missing the variable produces relative '/api' requests that fail with a
-// plain network error — indistinguishable from bad signal, which sends
-// everyone chasing the wrong problem. Fail fast and say so instead.
-export const API_CONFIGURED = !!RUNTIME_API;
+// False when the build has no EXPO_PUBLIC_API_URL, or (release builds) when
+// it is not https. Without this, a build missing the variable produces
+// relative '/api' requests that fail with a plain network error,
+// indistinguishable from bad signal. Fail fast and say so instead.
+export const API_CONFIGURED = !!RUNTIME_API && !API_INSECURE;
+
+// Host WITHOUT the /api suffix, used by non-axios callers (city master
+// fetch in constants/locations.js). Empty when the host is unusable, so
+// those calls fail instead of going out over plain http.
+export const API_BASE = API_CONFIGURED ? RUNTIME_API : '';
+
+// Called when the server rejects the current session token (HTTP 401).
+// AppContext registers its logout here; api.js cannot import AppContext.
+let unauthorizedHandler = null;
+let handlingUnauthorized = false;
+export const setUnauthorizedHandler = (fn) => { unauthorizedHandler = fn; };
+
+// verify-otp / send-otp answer with errors for a wrong or expired OTP; those
+// are login failures, not a dead session, and must never trigger a logout.
+const AUTH_ENTRY_PATHS = ['/auth/send-otp', '/auth/verify-otp'];
+
+const SERVER_ERROR_MESSAGE = 'Something went wrong on our side. Please try again in a moment.';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -39,7 +58,9 @@ api.interceptors.request.use(async (config) => {
     // Shaped like an axios error response so the screens that already read
     // err.response.data.error surface this verbatim.
     const e = new Error('API host not configured');
-    e.response = { status: 0, data: { error: 'This build has no server address configured (EXPO_PUBLIC_API_URL). Please install a build made from the preview or production profile.' } };
+    e.response = { status: 0, data: { error: API_INSECURE
+      ? 'This build is set to an insecure (http) server address. Please install an official build.'
+      : 'This build has no server address configured (EXPO_PUBLIC_API_URL). Please install a build made from the preview or production profile.' } };
     throw e;
   }
   // Logged-in session token first, then the temporary sign-up token issued
@@ -47,10 +68,40 @@ api.interceptors.request.use(async (config) => {
   // Guarded because a throw in here rejects the request with no response at
   // all, which every screen then reports as a connection problem.
   let token = null;
-  try { token = await getAuthToken(); } catch { token = null; }
+  let session = null;
+  try {
+    token = await getAuthToken();
+    session = await getSessionToken();
+  } catch { token = null; }
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Remember whether this request carried the logged-in session token, so a
+  // 401 can be matched to the session it belongs to (see below).
+  config.sentSessionToken = token && token === session ? token : null;
   return config;
 });
+
+// 401 on a request that carried the CURRENT session token means the server
+// no longer accepts it (expired or revoked): log out once. Ignored when:
+// - the request used no token or only the sign-up token,
+// - the token has changed since (a late answer from a previous session),
+// - it is the OTP login itself,
+// - a logout for this is already running (several requests can fail at once,
+//   and logout itself makes one call with the same token).
+async function handleUnauthorized(err) {
+  const sent = err?.config?.sentSessionToken;
+  const url = err?.config?.url || '';
+  if (!sent || handlingUnauthorized || !unauthorizedHandler) return;
+  if (AUTH_ENTRY_PATHS.some((p) => url.startsWith(p))) return;
+  // Claim the flag before the first await: several 401s usually arrive
+  // together, and all of them would otherwise pass the check above.
+  handlingUnauthorized = true;
+  try {
+    let current = null;
+    try { current = await getSessionToken(); } catch { current = null; }
+    if (sent === current) await unauthorizedHandler();
+  } catch { /* ignore */ }
+  finally { handlingUnauthorized = false; }
+}
 
 // Turn a timeout into an honest message. Screens read
 // err.response.data.error for their alert text and otherwise fall back to
@@ -59,13 +110,26 @@ api.interceptors.request.use(async (config) => {
 // genuinely came back with no response.
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
+  async (err) => {
     const timedOut = err?.code === 'ECONNABORTED' || /timeout/i.test(err?.message || '');
     if (timedOut && !err.response) {
       err.response = {
         status: 0,
         data: { error: 'The server is taking too long to respond. Please wait a moment and try again.' },
       };
+    }
+    const status = err?.response?.status;
+    if (status === 401) {
+      // Not awaited: the caller gets its error straight away while the app
+      // logs out and returns to the welcome screen.
+      handleUnauthorized(err);
+    }
+    // Screens show err.response.data.error verbatim. That is right for 4xx
+    // (e.g. "Invalid OTP"), but a 5xx text can carry internal details (stack
+    // traces, SQL, upstream errors), so release builds show a generic line.
+    if (status >= 500 && !__DEV__) {
+      const data = err.response.data;
+      err.response.data = { ...(data && typeof data === 'object' ? data : {}), error: SERVER_ERROR_MESSAGE };
     }
     return Promise.reject(err);
   }

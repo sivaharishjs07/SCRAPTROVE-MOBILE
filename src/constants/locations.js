@@ -18,6 +18,20 @@
 import { useSyncExternalStore } from 'react';
 import { API_BASE } from '../services/api';
 
+// fetch() has no timeout of its own; without one a stalled request leaves
+// the dropdowns empty forever. Same 60s limit as the axios client.
+const FETCH_TIMEOUT_MS = 60000;
+async function fetchJson(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const REMOTE = {};
 let statesFetched  = false;
 let statesPromise  = null;
@@ -31,7 +45,7 @@ async function _fetchStates() {
   if (statesPromise) return statesPromise;
   statesPromise = (async () => {
     try {
-      const arr = await fetch(`${API_BASE}/api/states`).then((r) => r.json());
+      const arr = await fetchJson(`${API_BASE}/api/states`);
       if (Array.isArray(arr)) {
         for (const s of arr) {
           if (!REMOTE[s.name]) REMOTE[s.name] = { id: s.id, districts: {} };
@@ -52,7 +66,7 @@ async function _fetchDistricts(stateName) {
   if (!state) return;
   const p = (async () => {
     try {
-      const arr = await fetch(`${API_BASE}/api/districts?state_id=${state.id}`).then((r) => r.json());
+      const arr = await fetchJson(`${API_BASE}/api/districts?state_id=${state.id}`);
       if (Array.isArray(arr)) {
         for (const d of arr) {
           if (!state.districts[d.name]) state.districts[d.name] = { id: d.id, cities: {} };
@@ -73,7 +87,7 @@ async function _fetchCities(stateName, districtName) {
   if (!district) return;
   const p = (async () => {
     try {
-      const arr = await fetch(`${API_BASE}/api/cities?district_id=${district.id}`).then((r) => r.json());
+      const arr = await fetchJson(`${API_BASE}/api/cities?district_id=${district.id}`);
       if (Array.isArray(arr)) {
         for (const c of arr) { district.cities[c.name] = c.id; }
         notify();
