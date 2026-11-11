@@ -33,6 +33,11 @@ jobs:
     name: Local EAS build (${{ github.event.inputs.profile || 'preview' }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      PROFILE: ${{ github.event.inputs.profile || 'preview' }}
+      # preview -> installable APK (staging API); production -> Android App
+      # Bundle (.aab) for Google Play upload.
+      ARTIFACT_FILE: ${{ (github.event.inputs.profile || 'preview') == 'production' && 'scraptrove-production.aab' || 'scraptrove-staging.apk' }}
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -56,7 +61,7 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build APK on this runner
+      - name: Build on this runner
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           CI: '1'
@@ -69,20 +74,20 @@ jobs:
           mkdir -p out
           eas build \
             --platform android \
-            --profile ${{ github.event.inputs.profile || 'preview' }} \
+            --profile "$PROFILE" \
             --local \
             --non-interactive \
-            --output "$PWD/out/scraptrove-staging.apk"
+            --output "$PWD/out/$ARTIFACT_FILE"
           ls -lh out/
 
-      - name: Upload APK as workflow artifact
+      - name: Upload build as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: scraptrove-staging-apk
-          path: out/scraptrove-staging.apk
+          name: ${{ env.ARTIFACT_FILE }}
+          path: out/${{ env.ARTIFACT_FILE }}
           if-no-files-found: error
           retention-days: 30
 
       - name: Show download hint
         run: |
-          echo "::notice title=APK ready::Download from the 'Artifacts' section at the bottom of this workflow run summary page."
+          echo "::notice title=${ARTIFACT_FILE} ready::Download from the 'Artifacts' section at the bottom of this workflow run summary page."

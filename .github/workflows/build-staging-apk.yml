@@ -43,6 +43,12 @@ jobs:
     # 45 min gives generous headroom over the ~15-20 min typical Expo
     # queue + build time on the free tier.
     timeout-minutes: 45
+    env:
+      PROFILE: ${{ github.event.inputs.profile || 'preview' }}
+      # preview -> installable APK (staging API); production -> Android App
+      # Bundle (.aab) for Google Play upload. An .aab cannot be installed
+      # directly on a phone.
+      ARTIFACT_FILE: ${{ (github.event.inputs.profile || 'preview') == 'production' && 'scraptrove-production.aab' || 'scraptrove-staging.apk' }}
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -59,13 +65,13 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build APK on Expo cloud (waits for finish)
+      - name: Build on Expo cloud (waits for finish)
         id: build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         # `--json` prints one JSON blob per finished build to stdout when
         # --wait is set. We tee it to a file so the next step can parse
-        # out the .apk download URL. --no-wait would exit immediately and
+        # out the .apk/.aab download URL. --no-wait would exit immediately and
         # leave us with nothing to upload here.
         run: |
           # Without pipefail the pipeline below takes tee's exit code, so a
@@ -80,42 +86,43 @@ jobs:
           fi
           eas build \
             --platform android \
-            --profile ${{ github.event.inputs.profile || 'preview' }} \
+            --profile "$PROFILE" \
             --non-interactive \
             --wait \
             --json | tee eas-build.json
 
-      - name: Extract APK URL from EAS output
+      - name: Extract build URL from EAS output
         id: apk
         run: |
           # `eas build --json --wait` emits an array of build objects. Pull
-          # the artifacts.buildUrl (that's the signed .apk download link).
+          # the artifacts.buildUrl (the signed .apk or .aab download link).
           URL=$(node -e "const b=JSON.parse(require('fs').readFileSync('eas-build.json','utf8')); const arr=Array.isArray(b)?b:[b]; console.log(arr[0]?.artifacts?.buildUrl||'')")
           if [ -z "$URL" ]; then
             echo "::error::EAS build finished but no artifact URL was returned."
             cat eas-build.json || true
             exit 1
           fi
-          echo "APK URL: $URL"
+          echo "Build URL: $URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Download APK
+      - name: Download build
         run: |
           mkdir -p out
           # EAS artifact URLs are pre-signed and time-limited (~30 min);
           # we're downloading well within that window.
-          curl -fL --retry 3 -o out/scraptrove-staging.apk "${{ steps.apk.outputs.url }}"
+          curl -fL --retry 3 -o "out/$ARTIFACT_FILE" "${{ steps.apk.outputs.url }}"
           ls -lh out/
 
-      - name: Upload APK as workflow artifact
+      - name: Upload build as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: scraptrove-staging-apk
-          path: out/scraptrove-staging.apk
-          # 30 days keeps the .apk downloadable from the Actions run page
+          name: ${{ env.ARTIFACT_FILE }}
+          path: out/${{ env.ARTIFACT_FILE }}
+          if-no-files-found: error
+          # 30 days keeps the file downloadable from the Actions run page
           # without indefinite storage bloat.
           retention-days: 30
 
       - name: Show download hint
         run: |
-          echo "::notice title=APK ready::Download from the 'Artifacts' section at the bottom of this workflow run summary page."
+          echo "::notice title=${ARTIFACT_FILE} ready::Download from the 'Artifacts' section at the bottom of this workflow run summary page."
