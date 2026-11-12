@@ -2,7 +2,7 @@
   "expo": {
     "name": "Scrap Trove",
     "slug": "scrapx",
-    "owner": "sivaharishjs07",
+    "owner": "sivaharish_js",
     "version": "1.1.0",
     "newArchEnabled": false,
     "orientation": "portrait",
@@ -83,7 +83,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "c1378f8b-76c6-4c90-a576-e56253c9a189"
       }
     }
   }
